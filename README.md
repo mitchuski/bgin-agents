@@ -182,7 +182,7 @@ npm run agents:seed      # Seed agent data
 ### Project Structure
 
 ```
-bgin-mvp/
+bgin-ai-mvp/
 ├── frontend/                 # React frontend
 │   ├── src/
 │   │   ├── components/       # React components

@@ -121,7 +121,7 @@ Set-Content -Path ".gitignore" -Value $gitignoreContent
 Write-Host "📦 Creating package.json files..." -ForegroundColor Yellow
 $rootPackageJson = @"
 {
-  "name": "bgin-mvp",
+  "name": "bgin-ai-mvp",
   "version": "1.0.0",
   "description": "Kyra AI Agent - Sovereign AI with Privacy by Design",
   "private": true,
@@ -390,7 +390,7 @@ Kyra is a sovereign AI agent implementing distributed consciousness, privacy by 
 
 ### Project Structure
 ```
-bgin-mvp/
+bgin-ai-mvp/
 ├── frontend/          # React TypeScript application
 ├── backend/           # Node.js Express API
 ├── infrastructure/    # Docker and deployment configs

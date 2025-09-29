@@ -18,7 +18,7 @@
 1. **Clone and Setup**
    ```bash
    git clone <your-repo-url>
-   cd bgin-mvp
+   cd bgin-ai-mvp
    cp env.example .env
    ```
 

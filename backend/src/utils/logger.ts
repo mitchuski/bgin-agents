@@ -14,7 +14,7 @@ const logFormat = winston.format.combine(
 const logger = winston.createLogger({
   level: config.nodeEnv === 'production' ? 'warn' : 'debug',
   format: logFormat,
-  defaultMeta: { service: 'bgin-mvp' },
+  defaultMeta: { service: 'bgin-ai-mvp' },
   transports: [
     new winston.transports.File({ filename: 'logs/error.log', level: 'error' }),
     new winston.transports.File({ filename: 'logs/combined.log' })

@@ -71,7 +71,7 @@ DEPLOYMENT FOR BLOCK 13 MEETING
 
 QUICK START (Recommended):
 1. Clone repository: git clone [repo-url]
-2. Navigate to project: cd bgin-mvp
+2. Navigate to project: cd bgin-ai-mvp
 3. Copy environment file: cp env.example .env
 4. Start services: docker-compose up -d
 5. Access application: http://localhost:3000

@@ -6,7 +6,7 @@ Your BGIN Multi-Agent Privacy Research System is now ready! Here's what has been
 
 ### **📁 Project Structure**
 ```
-bgin-mvp/
+bgin-ai-mvp/
 ├── 📄 README.md                    # Complete project documentation
 ├── 📄 package.json                 # Root workspace configuration
 ├── 📄 docker-compose.yml           # Multi-service orchestration
@@ -89,7 +89,7 @@ Complete PostgreSQL schema with:
 ### **2. Quick Start (Recommended)**
 ```bash
 # Navigate to project
-cd C:\Users\mitch\BGINAI\bgin-mvp
+cd C:\Users\mitch\BGINAI\bgin-ai-mvp
 
 # Make scripts executable (Linux/Mac)
 chmod +x scripts/*.sh

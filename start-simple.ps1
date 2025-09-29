@@ -3,7 +3,7 @@ Write-Host "🚀 Starting BGIN AI MVP..." -ForegroundColor Green
 
 # Check if we're in the right directory
 if (-not (Test-Path "package.json")) {
-    Write-Host "❌ Please run this script from the bgin-mvp directory" -ForegroundColor Red
+    Write-Host "❌ Please run this script from the bgin-ai-mvp directory" -ForegroundColor Red
     exit 1
 }
 

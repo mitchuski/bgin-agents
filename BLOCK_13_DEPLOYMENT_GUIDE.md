@@ -94,7 +94,7 @@ curl http://localhost:6333/collections
 **Quick Start**:
 ```bash
 # Clone and navigate to project
-cd bgin-mvp
+cd bgin-ai-mvp
 
 # Copy environment file
 cp env.example .env

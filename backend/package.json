@@ -1,5 +1,5 @@
 {
-  "name": "@bgin-mvp/backend",
+  "name": "@bgin-ai-mvp/backend",
   "version": "1.0.0",
   "description": "BGIN Multi-Agent Research Platform Backend",
   "main": "dist/server.js",

@@ -38,7 +38,7 @@ Your Kyra AI Agent project is now fully set up with:
 #### 2. Start Development
 ```bash
 # Navigate to project
-cd C:\Users\mitch\BGINAI\bgin-mvp
+cd C:\Users\mitch\BGINAI\bgin-ai-mvp
 
 # Install dependencies
 npm install

@@ -1,11 +1,11 @@
 {
-  "name": "bgin-mvp",
+  "name": "bgin-ai-mvp",
   "version": "1.0.0",
   "description": "Multi-Agent Privacy-Preserving Research System for BGIN Governance",
   "keywords": ["blockchain", "governance", "privacy", "ai-agents", "decentralized-identity", "trust-networks"],
   "repository": {
     "type": "git",
-    "url": "https://github.com/your-org/bgin-mvp.git"
+    "url": "https://github.com/your-org/bgin-ai-mvp.git"
   },
   "license": "MIT",
   "author": "BGIN Community",

@@ -33,7 +33,7 @@ docker --version
 ### Step 3: Set Up Project
 ```powershell
 # Navigate to your project directory
-cd C:\Users\mitch\BGINAI\bgin-mvp
+cd C:\Users\mitch\BGINAI\bgin-ai-mvp
 
 # Install root dependencies
 npm install
@@ -93,7 +93,7 @@ taskkill /PID <PID> /F
 
 Your project now has this structure:
 ```
-bgin-mvp/
+bgin-ai-mvp/
 ├── package.json              # Root package configuration
 ├── docker-compose.yml        # Docker services configuration
 ├── env.example              # Environment variables template
