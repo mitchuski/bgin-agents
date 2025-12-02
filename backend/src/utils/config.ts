@@ -25,12 +25,6 @@ const envSchema = Joi.object({
   ANTHROPIC_API_KEY: Joi.string().optional(),
   OPENAI_API_KEY: Joi.string().optional(),
   
-  // BlueNexus Integration
-  BLUENEXUS_API_KEY: Joi.string().optional(),
-  BLUENEXUS_ENDPOINT: Joi.string().default('https://api.staging.bluenexus.ai/api'),
-  BLUENEXUS_MODEL: Joi.string().default('claude-3.5-sonnet-20241022'),
-  BLUENEXUS_EMBEDDING_MODEL: Joi.string().default('text-embedding-3-large'),
-  
   // Kwaai Integration
   KWAAI_API_KEY: Joi.string().required(),
   KWAAI_ENDPOINT: Joi.string().default('https://api.kwaai.ai/v1'),
@@ -84,12 +78,6 @@ export const config = {
   anthropicApiKey: envVars.ANTHROPIC_API_KEY,
   openaiApiKey: envVars.OPENAI_API_KEY,
   
-  // BlueNexus Integration
-  bluenexusApiKey: envVars.BLUENEXUS_API_KEY,
-  bluenexusEndpoint: envVars.BLUENEXUS_ENDPOINT,
-  bluenexusModel: envVars.BLUENEXUS_MODEL,
-  bluenexusEmbeddingModel: envVars.BLUENEXUS_EMBEDDING_MODEL,
-  
   // Kwaai Integration
   kwaaiApiKey: envVars.KWAAI_API_KEY,
   kwaaiEndpoint: envVars.KWAAI_ENDPOINT,
@@ -97,7 +85,7 @@ export const config = {
   
   // Kwaai Distributed LLM
   kwaaiDistributed: {
-    nodes: envVars.KWAAI_DISTRIBUTED_NODES ? envVars.KWAAI_DISTRIBUTED_NODES.split(',').map((node: string) => node.trim()) : [],
+    nodes: envVars.KWAAI_DISTRIBUTED_NODES ? envVars.KWAAI_DISTRIBUTED_NODES.split(',').map(node => node.trim()) : [],
     enabled: envVars.KWAAI_DISTRIBUTED_ENABLED,
     loadBalancing: envVars.KWAAI_LOAD_BALANCING,
     redundancy: envVars.KWAAI_REDUNDANCY,

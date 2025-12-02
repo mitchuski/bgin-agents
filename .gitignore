@@ -140,9 +140,6 @@ chat-storage/
 *.pem
 *.p12
 *.pfx
-secrets/
-credentials/
-api-keys/
 
 # Logs and temporary files
 *.log

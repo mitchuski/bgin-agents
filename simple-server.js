@@ -30,12 +30,6 @@ const PHALA_MODEL = process.env.PHALA_MODEL || 'openai/gpt-oss-120b';
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY || '';
 const OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions';
 
-// BlueNexus AI configuration
-const BLUENEXUS_ENDPOINT = process.env.BLUENEXUS_ENDPOINT || 'https://api.staging.bluenexus.ai/api';
-const BLUENEXUS_API_KEY = process.env.BLUENEXUS_API_KEY || '';
-const BLUENEXUS_MODEL = process.env.BLUENEXUS_MODEL || 'claude-3.5-sonnet-20241022';
-const BLUENEXUS_EMBEDDING_MODEL = process.env.BLUENEXUS_EMBEDDING_MODEL || 'text-embedding-3-large';
-
 // KwaaiNet configuration
 const KWAAI_ENDPOINT = process.env.KWAAI_ENDPOINT || 'https://api.kwaai.ai/v1';
 const KWAAI_API_KEY = process.env.KWAAI_API_KEY || '';
@@ -140,49 +134,6 @@ const callPhalaCloud = async (message, agentType, sessionType, isMultiAgent = fa
     };
   } catch (error) {
     console.error('Phala Cloud API error:', error.response?.data || error.message);
-    throw error;
-  }
-};
-
-// BlueNexus AI Integration Functions
-const callBlueNexus = async (message, agentType, sessionType, isMultiAgent = false) => {
-  const systemPrompt = isMultiAgent 
-    ? getAgentSystemPrompt('multi', sessionType)
-    : getAgentSystemPrompt(agentType, sessionType);
-
-  try {
-    console.log(`🔵 Sending ${agentType} message to BlueNexus AI for ${sessionType} session`);
-    
-    const response = await axios.post(`${BLUENEXUS_ENDPOINT}/v1/chat/completions`, {
-      model: BLUENEXUS_MODEL,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: message }
-      ],
-      temperature: 0.2, // Lower temperature for more focused responses
-      max_tokens: 4000, // Increased for more comprehensive responses
-      top_p: 0.9, // Slightly more focused sampling
-      stream: false
-    }, {
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${BLUENEXUS_API_KEY}`,
-        'X-BlueNexus-Version': '1.0'
-      },
-      timeout: 30000
-    });
-
-    return {
-      content: response.data.choices[0].message.content,
-      confidence: 0.85, // High confidence for BlueNexus
-      sources: Math.floor(Math.random() * 8) + 3,
-      processingTime: response.data.usage?.total_tokens || 0,
-      llmUsed: true,
-      model: BLUENEXUS_MODEL,
-      bluenexusUsed: true
-    };
-  } catch (error) {
-    console.error('BlueNexus AI API error:', error.response?.data || error.message);
     throw error;
   }
 };
@@ -401,36 +352,25 @@ app.post('/api/chat', async (req, res) => {
     let response;
     
     try {
-      // Try BlueNexus first (primary LLM provider for shared agent chats)
-      if (BLUENEXUS_API_KEY) {
-        response = await callBlueNexus(message, agent, session, multiAgent);
-        console.log(`✅ BlueNexus response generated using ${response.model}`);
-      } else {
-        throw new Error('BlueNexus API key not configured');
-      }
-    } catch (bluenexusError) {
-      console.log(`⚠️ BlueNexus failed, trying KwaaiNet: ${bluenexusError.message}`);
+      // Try KwaaiNet first (primary LLM provider)
+      response = await generateKwaaiNetResponse(message, agent, session, multiAgent);
+      console.log(`✅ KwaaiNet response generated using ${response.model}`);
+    } catch (kwaaiError) {
+      console.log(`⚠️ KwaaiNet failed, trying OpenAI: ${kwaaiError.message}`);
       try {
-        // Fall back to KwaaiNet if BlueNexus fails
-        response = await generateKwaaiNetResponse(message, agent, session, multiAgent);
-        console.log(`✅ KwaaiNet response generated using ${response.model}`);
-      } catch (kwaaiError) {
-        console.log(`⚠️ KwaaiNet failed, trying OpenAI: ${kwaaiError.message}`);
+        // Fall back to OpenAI if KwaaiNet fails
+        response = await callOpenAI(message, agent, session, multiAgent);
+        console.log(`✅ OpenAI response generated using ${response.model}`);
+      } catch (openaiError) {
+        console.log(`⚠️ OpenAI failed, trying Phala Cloud: ${openaiError.message}`);
         try {
-          // Fall back to OpenAI if KwaaiNet fails
-          response = await callOpenAI(message, agent, session, multiAgent);
-          console.log(`✅ OpenAI response generated using ${response.model}`);
-        } catch (openaiError) {
-          console.log(`⚠️ OpenAI failed, trying Phala Cloud: ${openaiError.message}`);
-          try {
-            // Fall back to Phala Cloud if OpenAI fails
-            response = await callPhalaCloud(message, agent, session, multiAgent);
-            console.log(`✅ Phala Cloud response generated using ${response.model}`);
-          } catch (phalaError) {
-            console.log(`⚠️ All LLM services failed, using fallback: ${phalaError.message}`);
-            // Fall back to static responses if all LLM services fail
-            response = generateFallbackResponse(message, agent, session, multiAgent);
-          }
+          // Fall back to Phala Cloud if OpenAI fails
+          response = await callPhalaCloud(message, agent, session, multiAgent);
+          console.log(`✅ Phala Cloud response generated using ${response.model}`);
+        } catch (phalaError) {
+          console.log(`⚠️ All LLM services failed, using fallback: ${phalaError.message}`);
+          // Fall back to static responses if all LLM services fail
+          response = generateFallbackResponse(message, agent, session, multiAgent);
         }
       }
     }
@@ -461,9 +401,6 @@ app.post('/api/chat', async (req, res) => {
 app.get('/api/status', (req, res) => {
   res.json({
     status: 'running',
-    bluenexusConfigured: !!BLUENEXUS_API_KEY,
-    bluenexusEndpoint: BLUENEXUS_ENDPOINT,
-    bluenexusModel: BLUENEXUS_MODEL,
     phalaCloudConfigured: true,
     phalaEndpoint: PHALA_ENDPOINT,
     redpillConfigured: false,
@@ -471,49 +408,12 @@ app.get('/api/status', (req, res) => {
     kwaaiNetConfigured: !!KWAAI_API_KEY,
     kwaaiEndpoint: KWAAI_ENDPOINT,
     kwaaiModel: KWAAI_MODEL,
-    llmProvider: BLUENEXUS_API_KEY ? 'BlueNexus AI (Primary)' : 'KwaaiNet (Primary)',
-    fallbackProvider: BLUENEXUS_API_KEY ? 'KwaaiNet' : (OPENAI_API_KEY ? 'OpenAI GPT-3.5-turbo' : 'Phala Cloud'),
+    llmProvider: 'KwaaiNet (Primary)',
+    fallbackProvider: OPENAI_API_KEY ? 'OpenAI GPT-3.5-turbo' : 'Phala Cloud',
     finalFallback: 'Static Responses',
     timestamp: new Date().toISOString(),
     version: '1.0.0'
   });
-});
-
-app.get('/api/test-bluenexus', async (req, res) => {
-  try {
-    if (!BLUENEXUS_API_KEY) {
-      return res.json({
-        status: 'not_configured',
-        message: 'BlueNexus API key not configured',
-        llmAvailable: false,
-        provider: 'BlueNexus',
-        error: 'BLUENEXUS_API_KEY environment variable not set'
-      });
-    }
-
-    // Test BlueNexus directly
-    const testResponse = await callBlueNexus('Hello, this is a test message for BlueNexus AI integration', 'archive', 'test', false);
-    res.json({
-      status: 'working',
-      message: 'BlueNexus AI integration is working correctly',
-      llmAvailable: true,
-      provider: 'BlueNexus AI',
-      model: testResponse.model,
-      bluenexusUsed: testResponse.bluenexusUsed,
-      response: testResponse.content.substring(0, 200) + '...',
-      processingTime: testResponse.processingTime,
-      confidence: testResponse.confidence
-    });
-  } catch (error) {
-    res.json({
-      status: 'error',
-      message: 'BlueNexus AI test failed',
-      llmAvailable: false,
-      provider: 'BlueNexus AI',
-      error: error.message,
-      details: error.response?.data || 'Unknown error'
-    });
-  }
 });
 
 app.get('/api/test-llm', async (req, res) => {
@@ -3079,7 +2979,7 @@ app.get('/api/working-groups/health', (req, res) => {
 });
 
 // Serve React app for all other routes (must be last)
-app.use((req, res) => {
+app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'frontend/dist/index.html'));
 });
 

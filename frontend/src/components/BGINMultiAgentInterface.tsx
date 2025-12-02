@@ -39,8 +39,6 @@ const BGINMultiAgentInterface = () => {
   const [uploadWorkingGroup, setUploadWorkingGroup] = useState('');
   const [workingGroups, setWorkingGroups] = useState<any[]>([]);
   const [isUploading, setIsUploading] = useState(false);
-  const [showMobileAgentSelector, setShowMobileAgentSelector] = useState(false); // Mobile agent selector
-  const [showMobileSessionSelector, setShowMobileSessionSelector] = useState(false); // Mobile session selector
 
   // Load working groups on component mount
   useEffect(() => {
@@ -93,8 +91,7 @@ const BGINMultiAgentInterface = () => {
     fpp: { connected: false, status: 'disconnected', features: ['Data Sovereignty', 'Dignity-Based Economics', 'Privacy by Design'] },
     toip: { connected: false, status: 'disconnected', features: ['DID Management', 'Verifiable Credentials', 'Trust Networks'] },
     privacyPools: { connected: false, status: 'disconnected', features: ['ASP Eligibility', 'Research Rewards', 'Privacy Transactions'] },
-    phalaCloud: { connected: false, status: 'disconnected', features: ['Trusted Execution Environment', 'Confidential Computing', 'Secure AI Processing'] },
-    bluenexus: { connected: true, status: 'connected', features: ['GPT-4o', 'Claude Sonnet 4.5', 'High-Quality AI', 'Multi-Model Support'] }
+    phalaCloud: { connected: false, status: 'disconnected', features: ['Trusted Execution Environment', 'Confidential Computing', 'Secure AI Processing'] }
   });
   
   // Conference Sessions State
@@ -751,152 +748,6 @@ const BGINMultiAgentInterface = () => {
     </div>
   );
 
-  // Mobile Agent Selector Component
-  const MobileAgentSelector = () => (
-    <div 
-      className={`fixed inset-0 bg-black/50 backdrop-blur-sm z-50 transition-all duration-300 ${
-        showMobileAgentSelector ? 'opacity-100' : 'opacity-0 pointer-events-none'
-      }`}
-      onClick={() => setShowMobileAgentSelector(false)}
-    >
-      <div 
-        className={`absolute bottom-0 left-0 right-0 bg-slate-800 border-t border-blue-400/30 rounded-t-2xl shadow-2xl transform transition-all duration-300 ${
-          showMobileAgentSelector ? 'translate-y-0' : 'translate-y-full'
-        }`}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="p-4 border-b border-blue-400/20">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-white">Select Agent</h3>
-            <button
-              onClick={() => setShowMobileAgentSelector(false)}
-              className="p-2 hover:bg-slate-700 rounded-lg transition-colors"
-            >
-              <ChevronDown className="w-5 h-5 text-slate-400" />
-            </button>
-          </div>
-        </div>
-        
-        <div className="p-4 space-y-3 max-h-96 overflow-y-auto">
-          {Object.values(agentTypes).map(agent => {
-            const Icon = agent.icon;
-            const isSelected = selectedAgent === agent.id && !multiAgentMode;
-            
-            return (
-              <button
-                key={agent.id}
-                onClick={() => {
-                  setSelectedAgent(agent.id);
-                  setMultiAgentMode(false);
-                  setShowMobileAgentSelector(false);
-                }}
-                className={`w-full flex items-center gap-4 p-4 rounded-xl text-left transition-all ${
-                  isSelected
-                    ? 'bg-gradient-to-r ' + agent.color + ' text-white shadow-lg'
-                    : 'bg-slate-700/30 hover:bg-slate-700/50 text-slate-300'
-                }`}
-              >
-                <Icon className="w-6 h-6" />
-                <div className="flex-1">
-                  <div className="font-medium text-base">{agent.name}</div>
-                  <div className="text-sm opacity-70">{agent.description}</div>
-                </div>
-                <div className={`w-3 h-3 rounded-full ${
-                  agent.status === 'active' ? 'bg-green-400 animate-pulse' : 'bg-gray-400'
-                }`} />
-              </button>
-            );
-          })}
-          
-          <button
-            onClick={() => {
-              setMultiAgentMode(true);
-              setShowMobileAgentSelector(false);
-            }}
-            className="w-full flex items-center gap-4 p-4 rounded-xl text-left transition-all bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white shadow-lg"
-          >
-            <Network className="w-6 h-6" />
-            <div className="flex-1">
-              <div className="font-medium text-base">Multi-Agent Mode</div>
-              <div className="text-sm opacity-70">Collaborate with all agents</div>
-            </div>
-            <div className="w-3 h-3 rounded-full bg-green-400 animate-pulse" />
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-
-  // Mobile Session Selector Component
-  const MobileSessionSelector = () => (
-    <div 
-      className={`fixed inset-0 bg-black/50 backdrop-blur-sm z-50 transition-all duration-300 ${
-        showMobileSessionSelector ? 'opacity-100' : 'opacity-0 pointer-events-none'
-      }`}
-      onClick={() => setShowMobileSessionSelector(false)}
-    >
-      <div 
-        className={`absolute bottom-0 left-0 right-0 bg-slate-800 border-t border-blue-400/30 rounded-t-2xl shadow-2xl transform transition-all duration-300 ${
-          showMobileSessionSelector ? 'translate-y-0' : 'translate-y-full'
-        }`}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="p-4 border-b border-blue-400/20">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-white">Select Session</h3>
-            <button
-              onClick={() => setShowMobileSessionSelector(false)}
-              className="p-2 hover:bg-slate-700 rounded-lg transition-colors"
-            >
-              <ChevronDown className="w-5 h-5 text-slate-400" />
-            </button>
-          </div>
-        </div>
-        
-        <div className="p-4 space-y-3 max-h-96 overflow-y-auto">
-          {Object.values(sessions).map(session => {
-            const isSelected = selectedSession === session.id;
-            const sessionMessages = messages[`${session.id}-multi`] || [];
-            const participantCount = Math.floor(Math.random() * 15) + 5;
-            
-            return (
-              <button
-                key={session.id}
-                onClick={() => {
-                  setSelectedSession(session.id);
-                  setMultiAgentMode(true);
-                  setShowMobileSessionSelector(false);
-                }}
-                className={`w-full text-left p-4 rounded-xl transition-all ${
-                  isSelected
-                    ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg'
-                    : 'bg-slate-700/30 hover:bg-slate-700/50 text-slate-300'
-                }`}
-              >
-                <div className="flex items-center gap-3 mb-2">
-                  <div className={`w-10 h-10 rounded-lg bg-gradient-to-r ${session.color} flex items-center justify-center`}>
-                    <Network className="w-5 h-5 text-white" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="font-medium text-base">{session.name}</div>
-                    <div className="text-sm opacity-70">{session.description}</div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-sm font-medium">{participantCount}</div>
-                    <div className="text-xs opacity-70">participants</div>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-slate-400">{sessionMessages.length} messages</span>
-                  <span className="text-slate-400">{session.workingGroup}</span>
-                </div>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-    </div>
-  );
 
   const PrivacyStatusBar = () => (
     <div className="bg-slate-800/50 backdrop-blur border-b border-blue-400/30 p-3">
@@ -1089,33 +940,6 @@ const BGINMultiAgentInterface = () => {
               • Trust score calculation
             </div>
           </div>
-
-          {/* BlueNexus AI Integration */}
-          <div className="bg-gradient-to-r from-blue-600/20 to-indigo-600/20 border border-blue-400/30 rounded-lg p-3">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-3 h-3 rounded-full bg-blue-400 animate-pulse"></div>
-              <h4 className="text-sm font-semibold text-white">BlueNexus AI Integration</h4>
-            </div>
-            <p className="text-xs text-slate-300 mb-2">Primary LLM provider with high-quality AI models</p>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-slate-300">GPT-4o Model</span>
-                <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-slate-300">Claude Sonnet 4.5</span>
-                <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-slate-300">Multi-Model Support</span>
-                <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-slate-300">High-Quality Responses</span>
-                <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
-              </div>
-            </div>
-          </div>
           
           {/* Credential Composition Flow */}
           <div className="bg-slate-700/30 rounded-lg p-3">
@@ -1264,12 +1088,6 @@ const BGINMultiAgentInterface = () => {
       {/* Floating Agent Selector */}
         <AgentSelector />
         
-      {/* Mobile Agent Selector */}
-      <MobileAgentSelector />
-      
-      {/* Mobile Session Selector */}
-      <MobileSessionSelector />
-        
       {/* Floating My Contributions Panel */}
       <MyContributionsPanel />
       
@@ -1300,7 +1118,7 @@ const BGINMultiAgentInterface = () => {
         
         {/* Block 13 Sessions - Collaborative Chat Rooms */}
         <div className="flex-1 overflow-y-auto p-4 min-h-0">
-          <div className="space-y-3 pb-4">
+          <div className="space-y-3">
             {Object.values(sessions).map(session => {
               const isSelected = selectedSession === session.id;
               const sessionMessages = messages[`${session.id}-multi`] || [];
@@ -1433,43 +1251,35 @@ const BGINMultiAgentInterface = () => {
               {/* Integration Status Indicators */}
               <div className="grid grid-cols-2 gap-2">
                 <div className="flex items-center gap-2 p-2 bg-slate-700/30 rounded-lg">
-                  <div className={`w-2 h-2 rounded-full ${integrationStatus.bluenexus.connected ? 'bg-blue-400 animate-pulse' : 'bg-red-400'}`} />
-                  <span className="text-xs text-slate-300">BlueNexus</span>
-                </div>
-                <div className="flex items-center gap-2 p-2 bg-slate-700/30 rounded-lg">
                   <div className={`w-2 h-2 rounded-full ${integrationStatus.kwaai.connected ? 'bg-green-400' : 'bg-red-400'}`} />
                   <span className="text-xs text-slate-300">Kwaai</span>
                 </div>
                 <div className="flex items-center gap-2 p-2 bg-slate-700/30 rounded-lg">
                   <div className={`w-2 h-2 rounded-full ${integrationStatus.fpp.connected ? 'bg-green-400' : 'bg-red-400'}`} />
                   <span className="text-xs text-slate-300">FPP</span>
-                </div>
+            </div>
                 <div className="flex items-center gap-2 p-2 bg-slate-700/30 rounded-lg">
                   <div className={`w-2 h-2 rounded-full ${integrationStatus.toip.connected ? 'bg-green-400' : 'bg-red-400'}`} />
                   <span className="text-xs text-slate-300">ToIP</span>
                 </div>
                 <div className="flex items-center gap-2 p-2 bg-slate-700/30 rounded-lg">
-                  <div className={`w-2 h-2 rounded-full ${integrationStatus.phalaCloud.connected ? 'bg-cyan-400' : 'bg-red-400'}`} />
+                  <div className={`w-2 h-2 rounded-full ${integrationStatus.phalaCloud.connected ? 'bg-green-400' : 'bg-red-400'}`} />
                   <span className="text-xs text-slate-300">Phala</span>
-                </div>
-                <div className="flex items-center gap-2 p-2 bg-slate-700/30 rounded-lg">
-                  <div className={`w-2 h-2 rounded-full ${integrationStatus.privacyPools.connected ? 'bg-purple-400' : 'bg-red-400'}`} />
-                  <span className="text-xs text-slate-300">Privacy Pools</span>
-                </div>
+              </div>
               </div>
           </div>
         )}
         </div>
         
-        {/* System Status - Consolidated */}
+        {/* TEE Status Footer */}
         <div className="p-4 border-t border-blue-400/20 flex-shrink-0">
-          <div className="bg-gradient-to-r from-blue-600/20 to-indigo-600/20 border border-blue-400/30 rounded-lg p-3">
+          <div className="bg-gradient-to-r from-cyan-600/20 to-blue-600/20 border border-cyan-400/30 rounded-lg p-3">
             <div className="flex items-center gap-2 mb-2">
-              <div className="w-3 h-3 rounded-full bg-blue-400 animate-pulse"></div>
-              <span className="text-sm font-semibold text-white">System Active</span>
+              <Cpu className="w-4 h-4 text-cyan-400" />
+              <span className="text-sm font-semibold text-white">Shared TEE Active</span>
             </div>
             <div className="text-xs text-slate-300">
-              BlueNexus AI • Phala TEE • Multi-Agent Ready
+              All agents collaborate securely through Phala Cloud's trusted execution environment
             </div>
           </div>
         </div>
@@ -1543,7 +1353,7 @@ const BGINMultiAgentInterface = () => {
                         </p>
                         <div className="flex items-center gap-1 text-xs text-cyan-300">
                           <Cpu className="w-3 h-3" />
-                          <span>Multi-Agent Mode</span>
+                          <span>Shared TEE Active</span>
                     </div>
                       </>
                     ) : (
@@ -1553,7 +1363,7 @@ const BGINMultiAgentInterface = () => {
                         </p>
                         <div className="flex items-center gap-1 text-xs text-purple-300">
                           <Lock className="w-3 h-3" />
-                          <span>Direct Mode</span>
+                          <span>Private TEE</span>
                     </div>
                       </>
                   )}
@@ -1563,24 +1373,6 @@ const BGINMultiAgentInterface = () => {
             </div>
             
             <div className="flex items-center gap-3">
-              {/* Mobile Navigation Buttons - Only visible on small screens */}
-              <div className="flex items-center gap-2 md:hidden">
-                <button
-                  onClick={() => setShowMobileAgentSelector(true)}
-                  className="p-2 bg-slate-700/50 hover:bg-slate-700 rounded-lg transition-colors"
-                  title="Select Agent"
-                >
-                  <Brain className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => setShowMobileSessionSelector(true)}
-                  className="p-2 bg-slate-700/50 hover:bg-slate-700 rounded-lg transition-colors"
-                  title="Select Session"
-                >
-                  <MessageSquare className="w-4 h-4" />
-                </button>
-              </div>
-
               {/* Dynamic Status Based on Mode */}
               {multiAgentMode && currentSession?.id !== 'direct-agent' ? (
                 /* Collaborative Mode Status */
@@ -2119,26 +1911,6 @@ const BGINMultiAgentInterface = () => {
           </div>
         )}
         </>
-      </div>
-
-      {/* Mobile Floating Action Buttons */}
-      <div className="fixed bottom-6 right-6 z-40 md:hidden">
-        <div className="flex flex-col gap-3">
-          <button
-            onClick={() => setShowMobileSessionSelector(true)}
-            className="p-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white rounded-full shadow-lg transition-all hover:shadow-xl"
-            title="Select Session"
-          >
-            <MessageSquare className="w-6 h-6" />
-          </button>
-          <button
-            onClick={() => setShowMobileAgentSelector(true)}
-            className="p-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white rounded-full shadow-lg transition-all hover:shadow-xl"
-            title="Select Agent"
-          >
-            <Brain className="w-6 h-6" />
-          </button>
-        </div>
       </div>
     </div>
   );

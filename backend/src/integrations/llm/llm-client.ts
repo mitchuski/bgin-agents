@@ -509,142 +509,6 @@ class KwaaiNetProvider implements LLMProvider {
   }
 }
 
-class BlueNexusProvider implements LLMProvider {
-  name = 'bluenexus';
-  private client: AxiosInstance;
-  private baseUrl: string;
-  private apiKey: string;
-
-  constructor() {
-    this.baseUrl = process.env.BLUENEXUS_ENDPOINT || 'https://api.staging.bluenexus.ai/api';
-    this.apiKey = config.bluenexusApiKey || '';
-    
-    this.client = axios.create({
-      baseURL: this.baseUrl,
-      headers: {
-        'Authorization': `Bearer ${this.apiKey}`,
-        'Content-Type': 'application/json',
-        'X-BlueNexus-Version': '1.0',
-      },
-      timeout: 60000, // Increased timeout for larger models
-    });
-  }
-
-  async generateResponse(prompt: string, options: GenerationOptions = {}): Promise<LLMResponse> {
-    try {
-      const {
-        model = 'claude-3.5-sonnet-20241022',
-        maxTokens = 4000,
-        temperature = 0.2,
-        topP = 0.9,
-        stopSequences = []
-      } = options;
-
-      const requestPayload = {
-        model,
-        messages: [
-          { role: 'user', content: prompt }
-        ],
-        max_tokens: maxTokens,
-        temperature,
-        top_p: topP,
-        stop: stopSequences.length > 0 ? stopSequences : undefined,
-        stream: false
-      };
-
-      const response = await this.client.post('/v1/chat/completions', requestPayload);
-
-      const choice = response.data.choices[0];
-      return {
-        content: choice.message.content || '',
-        usage: response.data.usage ? {
-          promptTokens: response.data.usage.prompt_tokens,
-          completionTokens: response.data.usage.completion_tokens,
-          totalTokens: response.data.usage.total_tokens
-        } : undefined,
-        model: response.data.model,
-        finishReason: choice.finish_reason
-      };
-    } catch (error) {
-      logger.error('BlueNexus API error:', error);
-      throw error;
-    }
-  }
-
-  async generateEmbedding(text: string): Promise<EmbeddingResponse> {
-    try {
-      const response = await this.client.post('/v1/embeddings', {
-        model: 'text-embedding-3-large',
-        input: text
-      });
-
-      return {
-        embedding: response.data.data[0].embedding,
-        model: response.data.model,
-        usage: {
-          promptTokens: response.data.usage.prompt_tokens,
-          totalTokens: response.data.usage.total_tokens
-        }
-      };
-    } catch (error) {
-      logger.error('BlueNexus embedding error:', error);
-      throw error;
-    }
-  }
-
-  async analyzeSentiment(text: string): Promise<SentimentAnalysis> {
-    const prompt = `Analyze the sentiment of the following text and respond with a JSON object containing:
-    - sentiment: "positive", "negative", or "neutral"
-    - confidence: number between 0 and 1
-    - scores: object with positive, negative, neutral scores (0-1)
-    
-    Text: "${text}"`;
-
-    try {
-      const response = await this.generateResponse(prompt, { maxTokens: 200 });
-      const analysis = JSON.parse(response.content);
-      return analysis;
-    } catch (error) {
-      logger.error('Sentiment analysis failed:', error);
-      return {
-        sentiment: 'neutral',
-        confidence: 0.5,
-        scores: { positive: 0.33, negative: 0.33, neutral: 0.34 }
-      };
-    }
-  }
-
-  async extractEntities(text: string): Promise<Entity[]> {
-    const prompt = `Extract named entities from the following text and respond with a JSON array of objects containing:
-    - text: the entity text
-    - type: entity type (PERSON, ORGANIZATION, LOCATION, etc.)
-    - confidence: number between 0 and 1
-    - startIndex: character start position
-    - endIndex: character end position
-    
-    Text: "${text}"`;
-
-    try {
-      const response = await this.generateResponse(prompt, { maxTokens: 500 });
-      const entities = JSON.parse(response.content);
-      return Array.isArray(entities) ? entities : [];
-    } catch (error) {
-      logger.error('Entity extraction failed:', error);
-      return [];
-    }
-  }
-
-  async isAvailable(): Promise<boolean> {
-    try {
-      await this.client.get('/v1/models');
-      return true;
-    } catch (error) {
-      logger.error('BlueNexus availability check failed:', error);
-      return false;
-    }
-  }
-}
-
 class KwaaiDistributedProvider implements LLMProvider {
   name = 'kwaai-distributed';
   private nodes: string[];
@@ -866,18 +730,10 @@ export class LLMClient {
   }
 
   private initializeProviders(): void {
-    // Initialize BlueNexus provider (new integration)
-    if (config.bluenexusApiKey) {
-      this.providers.set('bluenexus', new BlueNexusProvider());
-      this.primaryProvider = 'bluenexus';
-    }
-
     // Initialize KwaaiDistributed provider (primary for distributed inference)
     if (config.kwaaiApiKey && process.env.KWAAI_DISTRIBUTED_NODES) {
       this.providers.set('kwaai-distributed', new KwaaiDistributedProvider());
-      if (this.primaryProvider === 'kwaainet') {
-        this.primaryProvider = 'kwaai-distributed';
-      }
+      this.primaryProvider = 'kwaai-distributed';
     }
 
     // Initialize KwaaiNet provider (primary fallback)
