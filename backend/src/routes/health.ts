@@ -107,10 +107,10 @@ router.get('/', async (req, res) => {
       logger.warn('Failed to include metrics in health check:', error);
     }
 
-    res.status(healthCheck.status === 'healthy' ? 200 : 503).json(healthCheck);
+    return res.status(healthCheck.status === 'healthy' ? 200 : 503).json(healthCheck);
   } catch (error) {
     logger.error('Health check failed:', error);
-    res.status(503).json({
+    return res.status(503).json({
       status: 'unhealthy',
       timestamp: new Date().toISOString(),
       error: 'Health check failed'
@@ -127,10 +127,10 @@ router.get('/metrics', async (req, res) => {
       });
     }
 
-    res.json(metrics);
+    return res.json(metrics);
   } catch (error) {
     logger.error('Metrics retrieval failed:', error);
-    res.status(500).json({
+    return res.status(500).json({
       error: 'Failed to retrieve metrics'
     });
   }
@@ -139,10 +139,10 @@ router.get('/metrics', async (req, res) => {
 router.get('/report', async (req, res) => {
   try {
     const report = await dataMonitor.generateReport();
-    res.json(report);
+    return res.json(report);
   } catch (error) {
     logger.error('Report generation failed:', error);
-    res.status(500).json({
+    return res.status(500).json({
       error: 'Failed to generate report'
     });
   }

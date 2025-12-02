@@ -7,12 +7,13 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
-import { config } from './utils/config';
+import { config } from './utils/config-simple';
 import { logger } from './utils/logger';
 import { database } from './utils/database-simple';
 
 // Route imports
 import healthRoutes from './routes/health';
+import phalaRoutes from './routes/phala';
 
 class SimpleBGINServer {
   private app: express.Application;
@@ -44,6 +45,31 @@ class SimpleBGINServer {
   private setupRoutes() {
     // Health check
     this.app.use('/health', healthRoutes);
+    
+    // Phala Cloud integration
+    this.app.use('/api/phala', phalaRoutes);
+
+    // LLM Chat endpoint
+    this.app.post('/api/chat', async (req, res) => {
+      try {
+        const { message, agent, session } = req.body;
+        
+        // For now, return a mock response
+        // In production, this would call the actual LLM service
+        const response = {
+          content: `[${agent || 'Archive'}] I understand you're asking about "${message}". This is a mock response from the BGIN Multi-Agent System. In a full implementation, this would connect to our LLM service for intelligent responses.`,
+          agent: agent || 'archive',
+          session: session || 'default',
+          timestamp: new Date().toISOString(),
+          confidence: 0.85
+        };
+        
+        res.json(response);
+      } catch (error) {
+        logger.error('Chat endpoint error:', error);
+        res.status(500).json({ error: 'Failed to process chat request' });
+      }
+    });
 
     // Mock API routes for development
     this.app.get('/api/agents/archive', (req, res) => {

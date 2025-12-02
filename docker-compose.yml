@@ -106,6 +106,24 @@ services:
     restart: unless-stopped
     command: npm run dev
 
+  # Phala Cloud Next.js Starter
+  phala-cloud:
+    image: leechael/phala-cloud-nextjs-starter:latest
+    container_name: bgin-phala-cloud
+    ports:
+      - "3002:3000"
+    volumes:
+      - /var/run/tappd.sock:/var/run/tappd.sock
+    environment:
+      PHALA_PUBLIC_KEY: 1c95e9d4ee9c368502581e86af0b16ab99cadca5b174134eb8ebdb639b150550
+      PHALA_SALT: ee17e2170d7d40dcaf3015d610837cf5
+      NODE_ENV: development
+    networks:
+      - bgin-network
+    restart: unless-stopped
+    profiles:
+      - phala
+
   # Monitoring Services (Optional for Development)
   prometheus:
     image: prom/prometheus:latest

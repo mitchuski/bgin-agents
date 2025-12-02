@@ -23,13 +23,13 @@ router.post('/trust-network/users', async (req: Request, res: Response) => {
 
     await bginASPManager.addUserToTrustNetwork(userId, did);
     
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
       message: 'User added to trust network successfully'
     });
   } catch (error) {
     console.error('Error adding user to trust network:', error);
-    res.status(500).json({
+    return res.status(500).json({
       error: 'Failed to add user to trust network'
     });
   }
@@ -50,13 +50,13 @@ router.post('/contributions', async (req: Request, res: Response) => {
 
     const contribution = await bginASPManager.addResearchContribution(contributionData);
     
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
       data: contribution
     });
   } catch (error) {
     console.error('Error adding research contribution:', error);
-    res.status(500).json({
+    return res.status(500).json({
       error: 'Failed to add research contribution'
     });
   }
@@ -71,7 +71,7 @@ router.get('/trust-network/users/:userId/score', async (req: Request, res: Respo
     
     const trustScore = bginASPManager.getUserTrustScore(userId);
     
-    res.json({
+    return res.json({
       success: true,
       data: {
         userId,
@@ -80,7 +80,7 @@ router.get('/trust-network/users/:userId/score', async (req: Request, res: Respo
     });
   } catch (error) {
     console.error('Error getting user trust score:', error);
-    res.status(500).json({
+    return res.status(500).json({
       error: 'Failed to get user trust score'
     });
   }
@@ -95,13 +95,13 @@ router.get('/trust-network/users/:userId/contributions', async (req: Request, re
     
     const contributions = bginASPManager.getUserContributions(userId);
     
-    res.json({
+    return res.json({
       success: true,
       data: contributions
     });
   } catch (error) {
     console.error('Error getting user contributions:', error);
-    res.status(500).json({
+    return res.status(500).json({
       error: 'Failed to get user contributions'
     });
   }
@@ -122,13 +122,13 @@ router.get('/trust-network/users/:userId/asp-eligibility', async (req: Request, 
       });
     }
     
-    res.json({
+    return res.json({
       success: true,
       data: eligibility
     });
   } catch (error) {
     console.error('Error getting user ASP eligibility:', error);
-    res.status(500).json({
+    return res.status(500).json({
       error: 'Failed to get user ASP eligibility'
     });
   }
@@ -149,13 +149,13 @@ router.get('/trust-network/users/:userId/privacy-pool-access', async (req: Reque
       });
     }
     
-    res.json({
+    return res.json({
       success: true,
       data: access
     });
   } catch (error) {
     console.error('Error getting user privacy pool access:', error);
-    res.status(500).json({
+    return res.status(500).json({
       error: 'Failed to get user privacy pool access'
     });
   }
@@ -176,14 +176,14 @@ router.post('/deposits/evaluate', async (req: Request, res: Response) => {
 
     const deposit = await bginASPManager.evaluateDeposit(depositData);
     
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
       data: deposit
     });
   } catch (error) {
     console.error('Error evaluating deposit:', error);
-    res.status(500).json({
-      error: error.message || 'Failed to evaluate deposit'
+    return res.status(500).json({
+      error: error instanceof Error ? error.message : 'Failed to evaluate deposit'
     });
   }
 });
@@ -195,7 +195,7 @@ router.get('/association-set', async (req: Request, res: Response) => {
   try {
     const associationSet = await bginASPManager.getAssociationSet();
     
-    res.json({
+    return res.json({
       success: true,
       data: {
         commitments: associationSet,
@@ -204,7 +204,7 @@ router.get('/association-set', async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Error getting association set:', error);
-    res.status(500).json({
+    return res.status(500).json({
       error: 'Failed to get association set'
     });
   }
@@ -219,7 +219,7 @@ router.post('/association-set/update', async (req: Request, res: Response) => {
     
     const associationSet = await bginASPManager.getAssociationSet();
     
-    res.json({
+    return res.json({
       success: true,
       data: {
         commitments: associationSet,
@@ -229,7 +229,7 @@ router.post('/association-set/update', async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Error updating association set:', error);
-    res.status(500).json({
+    return res.status(500).json({
       error: 'Failed to update association set'
     });
   }
@@ -242,13 +242,13 @@ router.get('/deposits/approved', async (req: Request, res: Response) => {
   try {
     const approvedDeposits = bginASPManager.getApprovedDeposits();
     
-    res.json({
+    return res.json({
       success: true,
       data: approvedDeposits
     });
   } catch (error) {
     console.error('Error getting approved deposits:', error);
-    res.status(500).json({
+    return res.status(500).json({
       error: 'Failed to get approved deposits'
     });
   }
@@ -263,13 +263,13 @@ router.get('/trust-network/users/:userId/rewards', async (req: Request, res: Res
     
     const rewards = bginASPManager.getUserRewards(userId);
     
-    res.json({
+    return res.json({
       success: true,
       data: rewards
     });
   } catch (error) {
     console.error('Error getting user rewards:', error);
-    res.status(500).json({
+    return res.status(500).json({
       error: 'Failed to get user rewards'
     });
   }
@@ -283,7 +283,7 @@ router.get('/status', async (req: Request, res: Response) => {
     const associationSet = await bginASPManager.getAssociationSet();
     const approvedDeposits = bginASPManager.getApprovedDeposits();
     
-    res.json({
+    return res.json({
       success: true,
       data: {
         associationSetSize: associationSet.length,
@@ -294,7 +294,7 @@ router.get('/status', async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Error getting privacy pools status:', error);
-    res.status(500).json({
+    return res.status(500).json({
       error: 'Failed to get privacy pools status'
     });
   }

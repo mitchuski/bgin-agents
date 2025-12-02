@@ -1,19 +1,19 @@
 import { useState, useRef, useEffect } from 'react';
 import { 
   Send, User, Mic, Square, Upload, ChevronDown, MessageSquare, 
-  Network, Brain, Target, BarChart3, Lock, Fingerprint, CheckCircle, 
+  Network, Brain, Target, BarChart3, Lock, Fingerprint, 
   ShieldCheck, Cpu, Archive, MessageCircle, Scale, Menu,
-  Bell, TrendingUp, Award, Lightbulb, BookOpenCheck, ChevronUp,
-  Users, Link
+  Bell, Award, Lightbulb, BookOpenCheck, ChevronUp,
+  Users, Link, Calendar, Filter, Clock
 } from 'lucide-react';
+import LocalApiService from '../services/localApiService';
 
 const BGINMultiAgentInterface = () => {
   const [selectedAgent, setSelectedAgent] = useState('archive');
-  const [selectedSession, setSelectedSession] = useState('regulatory');
+  const [selectedSession, setSelectedSession] = useState('bgin-agent-hack');
   const [messages, setMessages] = useState<Record<string, any[]>>({});
   const [inputValue, setInputValue] = useState('');
   const [isRecording, setIsRecording] = useState(false);
-  const [showLexicon, setShowLexicon] = useState(true);
   const [multiAgentMode, setMultiAgentMode] = useState(false);
   const [privacyLevel, setPrivacyLevel] = useState('selective');
   const [kwaaiConnected] = useState(false);
@@ -21,20 +21,162 @@ const BGINMultiAgentInterface = () => {
   const [userDID] = useState('did:example:123456789');
   const [reputationScore] = useState(0);
   const [trustRelationships] = useState(0);
-  const [showSidebar, setShowSidebar] = useState(true);
+  const [showSidebar, setShowSidebar] = useState(false); // Start collapsed for cleaner UI
   const [showTrustNetwork, setShowTrustNetwork] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const [notifications] = useState(0);
   const [activeView, setActiveView] = useState('chat');
   const [crossSessionInsights] = useState(0);
   const [showIntegrationRoadmap, setShowIntegrationRoadmap] = useState(false);
+  const [showAgentSelector, setShowAgentSelector] = useState(false); // New state for agent selector
+  const [showMyContributions, setShowMyContributions] = useState(false); // New state for contributions panel
+  const [showCredentialComposer, setShowCredentialComposer] = useState(false); // New state for credential composer
+  const [showUploadModal, setShowUploadModal] = useState(false); // New state for upload modal
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [uploadTitle, setUploadTitle] = useState('');
+  const [uploadAuthor, setUploadAuthor] = useState('');
+  const [uploadTags, setUploadTags] = useState('');
+  const [uploadWorkingGroup, setUploadWorkingGroup] = useState('');
+  const [workingGroups, setWorkingGroups] = useState<any[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
+
+  // Load working groups on component mount
+  useEffect(() => {
+    const loadWorkingGroups = async () => {
+      try {
+        const apiService = LocalApiService.getInstance();
+        const response = await apiService.getWorkingGroups();
+        if (response.success) {
+          setWorkingGroups(response.workingGroups);
+          // Set default working group to the first one
+          if (response.workingGroups.length > 0) {
+            setUploadWorkingGroup(response.workingGroups[0].id);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load working groups:', error);
+      }
+    };
+
+    loadWorkingGroups();
+  }, []);
+
+  // Close panels when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      
+      if (showAgentSelector && !target.closest('[data-agent-selector]')) {
+        setShowAgentSelector(false);
+      }
+      
+      if (showMyContributions && !target.closest('[data-contributions-panel]')) {
+        setShowMyContributions(false);
+      }
+      
+      if (showCredentialComposer && !target.closest('[data-credential-composer]')) {
+        setShowCredentialComposer(false);
+      }
+
+      if (showUploadModal && !target.closest('[data-upload-modal]')) {
+        setShowUploadModal(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showAgentSelector, showMyContributions, showCredentialComposer, showUploadModal]);
   const [integrationStatus] = useState({
     kwaai: { connected: false, status: 'disconnected', features: ['Privacy Analytics', 'Selective Disclosure', 'Zero-Knowledge Proofs'] },
     fpp: { connected: false, status: 'disconnected', features: ['Data Sovereignty', 'Dignity-Based Economics', 'Privacy by Design'] },
     toip: { connected: false, status: 'disconnected', features: ['DID Management', 'Verifiable Credentials', 'Trust Networks'] },
-    privacyPools: { connected: false, status: 'disconnected', features: ['ASP Eligibility', 'Research Rewards', 'Privacy Transactions'] }
+    privacyPools: { connected: false, status: 'disconnected', features: ['ASP Eligibility', 'Research Rewards', 'Privacy Transactions'] },
+    phalaCloud: { connected: false, status: 'disconnected', features: ['Trusted Execution Environment', 'Confidential Computing', 'Secure AI Processing'] }
   });
+  
+  // Conference Sessions State
+  const [conferenceSessions, setConferenceSessions] = useState<any[]>([]);
+  const [conferenceTracks, setConferenceTracks] = useState<any[]>([]);
+  const [showConferenceSessions, setShowConferenceSessions] = useState(false);
+  const [selectedTrack, setSelectedTrack] = useState<string>('all');
+  const [selectedDay, setSelectedDay] = useState<string>('all');
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Load conference data
+  const loadConferenceSessions = async () => {
+    try {
+      const localApiService = LocalApiService.getInstance();
+      const sessions = await localApiService.getConferenceSessions();
+      setConferenceSessions(sessions);
+    } catch (error) {
+      console.error('Failed to load conference sessions:', error);
+    }
+  };
+
+  const loadConferenceTracks = async () => {
+    try {
+      const localApiService = LocalApiService.getInstance();
+      const tracks = await localApiService.getConferenceTracks();
+      setConferenceTracks(tracks);
+    } catch (error) {
+      console.error('Failed to load conference tracks:', error);
+    }
+  };
+
+  const initConferenceSession = async (sessionId: string) => {
+    try {
+      // Get session details
+      const localApiService = LocalApiService.getInstance();
+      const sessionResult = await localApiService.getConferenceSession(sessionId);
+      
+      if (sessionResult.success) {
+        const session = sessionResult.session;
+        
+        // Create Multi Agent Hub session key
+        const multiAgentHubKey = `multi-agent-hub-${sessionId}`;
+        
+        // Initialize Multi Agent Hub with welcome message
+        const welcomeMessage = {
+          id: Date.now(),
+          type: 'system',
+          content: `🌐 **Multi Agent Hub: ${session.title}**\n\n**Session Details:**\n- Date: ${session.date}\n- Time: ${session.time}\n- Room: ${session.room}\n- Track: ${session.workingGroup}\n- Focus: ${session.focus}\n\n**🤖 Multi-Agent Collaboration**\nThis is a shared collaborative chat where all agents (Archive, Codex, Discourse) work together on ${session.sessionType} topics.\n\n**📁 Project Container**\nAll insights and discussions are saved as a project under "Multi Agent Hub" for this conference session.\n\n**Available Agents:** ${session.agents.join(', ')}\n\nStart collaborating with the multi-agent system!`,
+          timestamp: new Date().toLocaleTimeString(),
+          sessionId: sessionId,
+          isSystemMessage: true,
+          isMultiAgentHub: true,
+          projectContainer: 'multi-agent-hub'
+        };
+        
+        // Set up Multi Agent Hub chat
+        setMessages(prev => ({
+          ...prev,
+          [multiAgentHubKey]: [welcomeMessage]
+        }));
+        
+        // Switch to Multi Agent Hub session and multi-agent mode
+        setSelectedSession(multiAgentHubKey);
+        setMultiAgentMode(true);
+        setShowConferenceSessions(false);
+        
+        // Show success message
+        console.log(`✅ Multi Agent Hub initialized for ${session.title}`);
+      }
+    } catch (error) {
+      console.error('Failed to initialize Multi Agent Hub session:', error);
+    }
+  };
+
+
+  const getFilteredSessions = () => {
+    let filtered = conferenceSessions;
+    if (selectedDay !== 'all') {
+      filtered = filtered.filter(session => session.day === selectedDay);
+    }
+    if (selectedTrack !== 'all') {
+      filtered = filtered.filter(session => session.track === selectedTrack);
+    }
+    return filtered;
+  };
 
   // Enhanced Three-Agent System Configuration with ToIP Framework
   const agentTypes: Record<string, any> = {
@@ -118,77 +260,111 @@ const BGINMultiAgentInterface = () => {
     }
   };
 
-  // Session Configuration - Ready for Block 13
+  // Conference Tracks Configuration - Block 13
+  // Architecture:
+  // 1. Left Sidebar Tracks: Individual agent interactions (Archive, Codex, Discourse)
+  //    - Each track contributes to shared project container within LLM
+  //    - Single agent mode, not multi-agent
+  // 2. "Start Session" Button: Opens Multi Agent Hub for conference sessions
+  //    - One Multi Agent Hub per Block 13 conference session
+  //    - Collaborative multi-agent responses
+  //    - Saved as projects under "Multi Agent Hub"
   const sessions: Record<string, any> = {
-    keynote: {
-      id: 'keynote',
-      name: 'Opening Keynote',
-      description: 'Strategic governance frameworks',
-      status: 'planning',
+    'bgin-agent-hack': {
+      id: 'bgin-agent-hack',
+      name: 'BGIN Agent Hack',
+      description: 'Multi-agent system development and AI governance research',
+      status: 'active',
       participants: 0,
-      trending: false,
+      trending: true,
+      color: '#8B5CF6',
+      workingGroup: 'BGIN Agent Hack',
       agents: {
-        archive: { knowledgeBase: 'No documents loaded', documents: 0, correlations: 0 },
+        archive: { knowledgeBase: 'AI Development, Multi-Agent Systems, Governance Research', documents: 0, correlations: 0 },
         codex: { policyDomains: [], frameworks: 0, assessments: 0 },
         discourse: { activeThreads: 0, consensusItems: 0, engagementRate: 0 }
       }
     },
-    technical: {
-      id: 'technical',
-      name: 'Technical Standards',
-      description: 'Protocol development and standardization',
-      status: 'planning',
+    'ikp': {
+      id: 'ikp',
+      name: 'Identity, Key Management & Privacy',
+      description: 'Cryptographic identity, key management, and privacy-preserving technologies',
+      status: 'active',
       participants: 0,
-      trending: false,
+      trending: true,
+      color: '#10B981',
+      workingGroup: 'IKP',
       agents: {
-        archive: { knowledgeBase: 'No documents loaded', documents: 0, correlations: 0 },
+        archive: { knowledgeBase: 'Key Management, Cryptographic Security, Privacy Technologies', documents: 0, correlations: 0 },
         codex: { policyDomains: [], frameworks: 0, assessments: 0 },
         discourse: { activeThreads: 0, consensusItems: 0, engagementRate: 0 }
       }
     },
-    regulatory: {
-      id: 'regulatory',
-      name: 'Regulatory Landscape',
-      description: 'Policy analysis and compliance frameworks',
-      status: 'planning',
+    'cyber-security': {
+      id: 'cyber-security',
+      name: 'Cyber Security',
+      description: 'Blockchain security, threat analysis, and protection mechanisms',
+      status: 'active',
       participants: 0,
-      trending: false,
+      trending: true,
+      color: '#EF4444',
+      workingGroup: 'Cyber Security',
       agents: {
-        archive: { knowledgeBase: 'No documents loaded', documents: 0, correlations: 0 },
+        archive: { knowledgeBase: 'Security Analysis, Threat Assessment, Protection Mechanisms', documents: 0, correlations: 0 },
         codex: { policyDomains: [], frameworks: 0, assessments: 0 },
         discourse: { activeThreads: 0, consensusItems: 0, engagementRate: 0 }
       }
     },
-    privacy: {
-      id: 'privacy',
-      name: 'Privacy & Digital Rights',
-      description: 'Privacy preservation and rights advocacy',
-      status: 'planning',
+    'fase': {
+      id: 'fase',
+      name: 'FASE (Financial and Social Economies)',
+      description: 'Policy and financial applications of blockchain technology',
+      status: 'active',
       participants: 0,
-      trending: false,
+      trending: true,
+      color: '#F59E0B',
+      workingGroup: 'FASE',
       agents: {
-        archive: { knowledgeBase: 'No documents loaded', documents: 0, correlations: 0 },
+        archive: { knowledgeBase: 'Financial Applications, Policy Analysis, Social Impact', documents: 0, correlations: 0 },
         codex: { policyDomains: [], frameworks: 0, assessments: 0 },
         discourse: { activeThreads: 0, consensusItems: 0, engagementRate: 0 }
       }
     },
-    governance: {
-      id: 'governance',
-      name: 'Cross-Chain Governance',
-      description: 'Multi-chain governance mechanisms',
-      status: 'planning',
+    'general': {
+      id: 'general',
+      name: 'General',
+      description: 'General discussions, networking, and cross-cutting topics',
+      status: 'active',
       participants: 0,
       trending: false,
+      color: '#6B7280',
+      workingGroup: 'General',
       agents: {
-        archive: { knowledgeBase: 'No documents loaded', documents: 0, correlations: 0 },
+        archive: { knowledgeBase: 'Cross-cutting Topics, Networking, General Discussions', documents: 0, correlations: 0 },
         codex: { policyDomains: [], frameworks: 0, assessments: 0 },
         discourse: { activeThreads: 0, consensusItems: 0, engagementRate: 0 }
       }
+    },
+    'direct-agent': {
+      id: 'direct-agent',
+      name: 'Direct Agent Access',
+      description: 'Speak directly with individual agents',
+      status: 'active',
+      participants: 1,
+      trending: false,
+      color: '#8B5CF6',
+      workingGroup: 'Private',
+      agents: {}
     }
   };
 
   const currentAgent = agentTypes[selectedAgent];
-  const currentSession = sessions[selectedSession];
+  const currentSession = sessions[selectedSession] || (selectedSession.startsWith('multi-agent-hub-') ? {
+    name: 'Multi Agent Hub',
+    description: 'Collaborative multi-agent session',
+    participants: 0,
+    agents: { archive: {}, codex: {}, discourse: {} }
+  } : null);
   const currentSessionAgent = currentSession?.agents?.[selectedAgent];
 
   // Initialize messages for each agent-session combination
@@ -214,13 +390,20 @@ const BGINMultiAgentInterface = () => {
       });
     });
     setMessages(initialMessages);
+    
+    // Load conference data
+    loadConferenceSessions();
+    loadConferenceTracks();
   }, []);
 
-  const currentMessages = messages[`${selectedSession}-${selectedAgent}`] || [];
+  const currentMessages = messages[multiAgentMode ? `${selectedSession}-multi` : `${selectedSession}-${selectedAgent}`] || [];
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (inputValue.trim()) {
+      const isMultiAgentHub = selectedSession.startsWith('multi-agent-hub-');
+      const isTrackSession = !isMultiAgentHub && !multiAgentMode;
       const messageKey = multiAgentMode ? `${selectedSession}-multi` : `${selectedSession}-${selectedAgent}`;
+      
       const newMessage = {
         id: Date.now(),
         type: 'user',
@@ -229,7 +412,9 @@ const BGINMultiAgentInterface = () => {
         sessionId: selectedSession,
         agentType: selectedAgent,
         multiAgent: multiAgentMode,
-        privacyLevel: privacyLevel
+        privacyLevel: privacyLevel,
+        isMultiAgentHub: isMultiAgentHub,
+        isTrackSession: isTrackSession
       };
       
       setMessages(prev => ({
@@ -239,8 +424,66 @@ const BGINMultiAgentInterface = () => {
       
       setIsTyping(true);
       
-      // Simulate AI response
-      setTimeout(() => {
+      try {
+        let response;
+        const localApiService = LocalApiService.getInstance();
+        
+        if (isMultiAgentHub) {
+          // Multi Agent Hub - collaborative multi-agent responses
+          console.log('🤖 Multi Agent Hub: Collaborative multi-agent processing');
+          response = await localApiService.sendMessage(
+            inputValue,
+            selectedAgent,
+            selectedSession.replace('multi-agent-hub-', ''), // Remove prefix for API
+            true // Force multi-agent mode
+          );
+        } else if (isTrackSession) {
+          // Individual track session - single agent contributing to shared project
+          console.log(`📁 Track Session: ${selectedAgent} contributing to shared project container`);
+          response = await localApiService.sendMessage(
+            inputValue,
+            selectedAgent,
+            selectedSession,
+            false // Single agent mode
+          );
+        } else {
+          // Regular session
+          response = await localApiService.sendMessage(
+            inputValue,
+            selectedAgent,
+            selectedSession,
+            multiAgentMode
+          );
+        }
+        
+        const aiResponse = {
+          id: Date.now() + 1,
+          type: 'assistant',
+          content: response.content,
+          isHtml: false,
+          timestamp: new Date().toLocaleTimeString(),
+          author: multiAgentMode ? 'Multi-Agent System' : currentAgent.name,
+          agentType: selectedAgent,
+          sessionId: selectedSession,
+          multiAgent: multiAgentMode,
+          confidence: response.confidence,
+          sources: response.sources,
+          llmUsed: response.llmUsed,
+          model: response.model,
+          processingTime: response.processingTime,
+          isMultiAgentHub: isMultiAgentHub,
+          isTrackSession: isTrackSession,
+          projectContainer: isMultiAgentHub ? 'multi-agent-hub' : 'shared-project'
+        };
+        
+        setMessages(prev => ({
+          ...prev,
+          [messageKey]: [...(prev[messageKey] || []), aiResponse]
+        }));
+        
+      } catch (error) {
+        console.error('Failed to get Phala Cloud response:', error);
+        // Fallback to mock response
         const response = generateAgentResponse(inputValue, selectedAgent, selectedSession, multiAgentMode);
         const aiResponse = {
           id: Date.now() + 1,
@@ -253,16 +496,68 @@ const BGINMultiAgentInterface = () => {
           sessionId: selectedSession,
           multiAgent: multiAgentMode,
           confidence: Math.random() * 0.3 + 0.7,
-          sources: Math.floor(Math.random() * 8) + 3
+          sources: Math.floor(Math.random() * 8) + 3,
+          phalaCloudUsed: false,
+          confidentialCompute: false
         };
         setMessages(prev => ({
           ...prev,
           [messageKey]: [...(prev[messageKey] || []), aiResponse]
         }));
+      } finally {
         setIsTyping(false);
-      }, 1500);
+      }
       
       setInputValue('');
+    }
+  };
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setUploadFile(file);
+      // Auto-fill title from filename if not already set
+      if (!uploadTitle) {
+        setUploadTitle(file.name.replace(/\.[^/.]+$/, ""));
+      }
+    }
+  };
+
+  const handleUploadDocument = async () => {
+    if (!uploadFile || !uploadTitle || !uploadAuthor || !uploadWorkingGroup) {
+      alert('Please fill in all required fields');
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      const apiService = LocalApiService.getInstance();
+      const tags = uploadTags.split(',').map(tag => tag.trim()).filter(tag => tag);
+      
+      const response = await apiService.uploadDocument(
+        uploadFile,
+        uploadWorkingGroup,
+        uploadTitle,
+        uploadAuthor,
+        tags
+      );
+
+      if (response.success) {
+        alert('Document uploaded successfully!');
+        setShowUploadModal(false);
+        // Reset form
+        setUploadFile(null);
+        setUploadTitle('');
+        setUploadAuthor('');
+        setUploadTags('');
+      } else {
+        alert('Failed to upload document: ' + response.error);
+      }
+    } catch (error) {
+      console.error('Upload error:', error);
+      alert('Failed to upload document. Please try again.');
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -344,6 +639,8 @@ const BGINMultiAgentInterface = () => {
             className={`p-2 rounded-lg transition-colors ${
               activeView === 'analytics' ? 'bg-blue-600' : 'bg-slate-700/50 hover:bg-slate-700'
             }`}
+            title="View analytics"
+            aria-label="View analytics"
           >
             <BarChart3 className="w-4 h-4" />
           </button>
@@ -352,10 +649,16 @@ const BGINMultiAgentInterface = () => {
             className={`p-2 rounded-lg transition-colors ${
               showTrustNetwork ? 'bg-green-600' : 'bg-slate-700/50 hover:bg-slate-700'
             }`}
+            title="Toggle trust network"
+            aria-label="Toggle trust network"
           >
             <Network className="w-4 h-4" />
           </button>
-          <button className="p-2 bg-slate-700/50 hover:bg-slate-700 rounded-lg transition-colors relative">
+          <button 
+            className="p-2 bg-slate-700/50 hover:bg-slate-700 rounded-lg transition-colors relative"
+            title="View notifications"
+            aria-label={`View notifications${notifications > 0 ? ` (${notifications} unread)` : ''}`}
+          >
             <Bell className="w-4 h-4" />
             {notifications > 0 && (
               <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full text-xs flex items-center justify-center text-white">
@@ -368,211 +671,83 @@ const BGINMultiAgentInterface = () => {
     </div>
   );
 
+  // Floating Agent Selector - appears when user clicks agent switcher
   const AgentSelector = () => (
-    <div className="bg-slate-800/50 backdrop-blur border-b border-blue-400/30 p-4">
+    <div 
+      data-agent-selector
+      className={`fixed top-20 left-4 z-50 transition-all duration-300 ${
+        showAgentSelector ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 pointer-events-none'
+      }`}
+    >
+      <div className="bg-slate-800/95 backdrop-blur border border-blue-400/30 rounded-xl p-4 shadow-2xl min-w-80">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold text-white flex items-center gap-2">
-          <Cpu className="w-5 h-5" />
-          Multi-Agent System
-        </h2>
+          <h3 className="text-lg font-semibold text-white">Choose Agent</h3>
         <button
-          onClick={() => setMultiAgentMode(!multiAgentMode)}
-          className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all ${
-            multiAgentMode 
-              ? 'bg-gradient-to-r from-purple-500 to-pink-600 text-white shadow-lg' 
-              : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-          }`}
-        >
-          <Network className="w-4 h-4" />
-          {multiAgentMode ? 'Multi-Agent Active' : 'Multi-Agent Mode'}
+            onClick={() => setShowAgentSelector(false)}
+            className="p-1 bg-slate-700/50 hover:bg-slate-700 rounded-lg transition-colors"
+            title="Close agent selector"
+            aria-label="Close agent selector"
+          >
+            <ChevronDown className="w-4 h-4" />
         </button>
       </div>
       
-      {/* Agent Type Selector */}
-      <div className="grid grid-cols-3 gap-2 mb-4">
+        <div className="space-y-2">
         {Object.values(agentTypes).map(agent => {
           const Icon = agent.icon;
-          const isSelected = selectedAgent === agent.id;
+            const isSelected = selectedAgent === agent.id && !multiAgentMode;
           
           return (
             <button
               key={agent.id}
-              onClick={() => setSelectedAgent(agent.id)}
-              className={`flex flex-col items-center gap-2 p-3 rounded-lg text-center transition-all relative ${
+                onClick={() => {
+                  setSelectedAgent(agent.id);
+                  setMultiAgentMode(false);
+                  setShowAgentSelector(false);
+                }}
+                className={`w-full flex items-center gap-3 p-3 rounded-lg text-left transition-all ${
                 isSelected
-                  ? 'bg-gradient-to-r ' + agent.color + ' text-white shadow-lg transform scale-105'
-                  : 'bg-slate-700/30 hover:bg-slate-700/50 text-slate-300 hover:scale-102'
+                    ? 'bg-gradient-to-r ' + agent.color + ' text-white shadow-lg'
+                    : 'bg-slate-700/30 hover:bg-slate-700/50 text-slate-300'
               }`}
             >
-              <Icon className="w-6 h-6" />
-              <div>
+                <Icon className="w-5 h-5" />
+                <div className="flex-1">
                 <div className="font-medium text-sm">{agent.name}</div>
                 <div className="text-xs opacity-70">{agent.description}</div>
               </div>
-              <div className={`absolute top-2 right-2 w-2 h-2 rounded-full ${
+                <div className={`w-2 h-2 rounded-full ${
                 agent.status === 'active' ? 'bg-green-400 animate-pulse' : 'bg-gray-400'
               }`} />
-              <div className="text-xs opacity-60 mt-1">
-                {agent.performance.accuracy}% accuracy
-              </div>
             </button>
           );
         })}
-      </div>
-
-      {/* Session Selector */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between mb-2">
-          <h3 className="text-sm font-semibold text-slate-300">Block 13 Sessions</h3>
-          <div className="text-xs text-slate-400">{crossSessionInsights} cross-session insights</div>
-        </div>
-        {Object.values(sessions).map(session => {
-          const isSelected = selectedSession === session.id;
-          const sessionAgent = session.agents[selectedAgent];
           
-          return (
             <button
-              key={session.id}
-              onClick={() => setSelectedSession(session.id)}
-              className={`w-full flex items-center justify-between p-3 rounded-lg text-left transition-all ${
-                isSelected
-                  ? 'bg-gradient-to-r ' + currentAgent.color + ' text-white shadow-lg'
+            onClick={() => {
+              setMultiAgentMode(true);
+              setShowAgentSelector(false);
+            }}
+            className={`w-full flex items-center gap-3 p-3 rounded-lg text-left transition-all ${
+              multiAgentMode
+                ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg'
                   : 'bg-slate-700/30 hover:bg-slate-700/50 text-slate-300'
               }`}
             >
+            <Network className="w-5 h-5" />
               <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <span className="font-medium">{session.name}</span>
-                  {session.trending && <TrendingUp className="w-3 h-3 text-orange-400" />}
+              <div className="font-medium text-sm">Multi-Agent Hub</div>
+              <div className="text-xs opacity-70">All agents collaborate</div>
                 </div>
-                <div className="text-xs opacity-70">{session.description}</div>
-                {sessionAgent && (
-                  <div className="text-xs mt-1 opacity-60 flex items-center gap-3">
-                    {selectedAgent === 'archive' && (
-                      <>
-                        <span>{sessionAgent.documents} docs</span>
-                        <span>{sessionAgent.correlations} correlations</span>
-                      </>
-                    )}
-                    {selectedAgent === 'codex' && (
-                      <>
-                        <span>{sessionAgent.frameworks} frameworks</span>
-                        <span>{sessionAgent.assessments} assessments</span>
-                      </>
-                    )}
-                    {selectedAgent === 'discourse' && (
-                      <>
-                        <span>{sessionAgent.activeThreads} threads</span>
-                        <span>{sessionAgent.engagementRate}% engagement</span>
-                      </>
-                    )}
-                  </div>
-                )}
-              </div>
-              <div className="flex flex-col items-end gap-1">
                 <div className={`w-2 h-2 rounded-full ${
-                  session.status === 'live' ? 'bg-red-400 animate-pulse' :
-                  session.status === 'active' ? 'bg-green-400' :
-                  session.status === 'upcoming' ? 'bg-yellow-400' :
-                  'bg-gray-400'
+              multiAgentMode ? 'bg-green-400 animate-pulse' : 'bg-gray-400'
                 }`} />
-                <span className="text-xs">{session.participants}</span>
-              </div>
             </button>
-          );
-        })}
       </div>
+    </div>
     </div>
   );
 
-  const IntegrationRoadmapPanel = () => (
-    <div className="bg-slate-800/50 backdrop-blur border border-blue-400/30 rounded-lg p-4 mb-4">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-          <Network className="w-5 h-5" />
-          Block 13 Integration Roadmap
-        </h3>
-        <button
-          onClick={() => setShowIntegrationRoadmap(!showIntegrationRoadmap)}
-          className="p-2 bg-slate-700/50 hover:bg-slate-700 rounded-lg transition-colors"
-        >
-          {showIntegrationRoadmap ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-        </button>
-      </div>
-      
-      {showIntegrationRoadmap && (
-        <div className="grid grid-cols-2 gap-4">
-          {/* Kwaai Integration */}
-          <div className="bg-gradient-to-r from-purple-600/20 to-pink-600/20 border border-purple-400/30 rounded-lg p-3">
-            <div className="flex items-center gap-2 mb-2">
-              <div className={`w-3 h-3 rounded-full ${integrationStatus.kwaai.connected ? 'bg-green-400 animate-pulse' : 'bg-red-400'}`} />
-              <h4 className="font-semibold text-white">Kwaai Privacy Platform</h4>
-            </div>
-            <p className="text-xs text-slate-300 mb-2">Privacy-preserving analytics and insights</p>
-            <div className="space-y-1">
-              {integrationStatus.kwaai.features.map((feature, index) => (
-                <div key={index} className="flex items-center gap-2 text-xs text-slate-400">
-                  <CheckCircle className="w-3 h-3 text-green-400" />
-                  <span>{feature}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* FPP Integration */}
-          <div className="bg-gradient-to-r from-blue-600/20 to-cyan-600/20 border border-blue-400/30 rounded-lg p-3">
-            <div className="flex items-center gap-2 mb-2">
-              <div className={`w-3 h-3 rounded-full ${integrationStatus.fpp.connected ? 'bg-green-400 animate-pulse' : 'bg-red-400'}`} />
-              <h4 className="font-semibold text-white">First Person Project</h4>
-            </div>
-            <p className="text-xs text-slate-300 mb-2">Data sovereignty and dignity-based economics</p>
-            <div className="space-y-1">
-              {integrationStatus.fpp.features.map((feature, index) => (
-                <div key={index} className="flex items-center gap-2 text-xs text-slate-400">
-                  <CheckCircle className="w-3 h-3 text-green-400" />
-                  <span>{feature}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* ToIP Integration */}
-          <div className="bg-gradient-to-r from-green-600/20 to-teal-600/20 border border-green-400/30 rounded-lg p-3">
-            <div className="flex items-center gap-2 mb-2">
-              <div className={`w-3 h-3 rounded-full ${integrationStatus.toip.connected ? 'bg-green-400 animate-pulse' : 'bg-red-400'}`} />
-              <h4 className="font-semibold text-white">Trust over IP</h4>
-            </div>
-            <p className="text-xs text-slate-300 mb-2">DID management and verifiable credentials</p>
-            <div className="space-y-1">
-              {integrationStatus.toip.features.map((feature, index) => (
-                <div key={index} className="flex items-center gap-2 text-xs text-slate-400">
-                  <CheckCircle className="w-3 h-3 text-green-400" />
-                  <span>{feature}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Privacy Pools Integration */}
-          <div className="bg-gradient-to-r from-orange-600/20 to-red-600/20 border border-orange-400/30 rounded-lg p-3">
-            <div className="flex items-center gap-2 mb-2">
-              <div className={`w-3 h-3 rounded-full ${integrationStatus.privacyPools.connected ? 'bg-green-400 animate-pulse' : 'bg-red-400'}`} />
-              <h4 className="font-semibold text-white">Privacy Pools</h4>
-            </div>
-            <p className="text-xs text-slate-300 mb-2">ASP eligibility and research rewards</p>
-            <div className="space-y-1">
-              {integrationStatus.privacyPools.features.map((feature, index) => (
-                <div key={index} className="flex items-center gap-2 text-xs text-slate-400">
-                  <CheckCircle className="w-3 h-3 text-green-400" />
-                  <span>{feature}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
 
   const PrivacyStatusBar = () => (
     <div className="bg-slate-800/50 backdrop-blur border-b border-blue-400/30 p-3">
@@ -618,6 +793,291 @@ const BGINMultiAgentInterface = () => {
             <div className={`w-2 h-2 rounded-full ${fpProjectConnected ? 'bg-blue-400 animate-pulse' : 'bg-red-400'}`} />
             <span className="text-slate-300">FPP</span>
           </div>
+          
+          <div className="flex items-center gap-1 text-xs">
+            <div className={`w-2 h-2 rounded-full ${integrationStatus.phalaCloud.connected ? 'bg-cyan-400 animate-pulse' : 'bg-red-400'}`} />
+            <span className="text-slate-300">Phala</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Credential Composer Panel - Floating overlay
+  const CredentialComposerPanel = () => (
+    <div 
+      data-credential-composer
+      className={`fixed top-20 right-4 z-50 transition-all duration-300 ${
+        showCredentialComposer ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 pointer-events-none'
+      }`}
+    >
+      <div className="bg-slate-800/95 backdrop-blur border border-purple-400/30 rounded-xl p-4 shadow-2xl min-w-96 max-w-lg">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+            <ShieldCheck className="w-5 h-5" />
+            Compose Intelligence Credential
+          </h3>
+          <button
+            onClick={() => setShowCredentialComposer(false)}
+            className="p-1 bg-slate-700/50 hover:bg-slate-700 rounded-lg transition-colors"
+            title="Close credential composer"
+          >
+            <ChevronDown className="w-4 h-4" />
+          </button>
+        </div>
+        
+        <div className="space-y-4">
+          {/* Working Group Access */}
+          <div className="bg-slate-700/30 rounded-lg p-3">
+            <h4 className="text-sm font-semibold text-white mb-2">Working Group Access</h4>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-slate-300">BGIN Agent Hack</span>
+                <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-slate-300">Identity, Key Management & Privacy</span>
+                <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-slate-300">Cyber Security</span>
+                <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-slate-300">FASE</span>
+                <div className="w-2 h-2 bg-yellow-400 rounded-full"></div>
+              </div>
+            </div>
+          </div>
+          
+          {/* Agentic Intelligence Contributions */}
+          <div className="bg-slate-700/30 rounded-lg p-3">
+            <h4 className="text-sm font-semibold text-white mb-2">Agentic Intelligence Contributions</h4>
+            <div className="grid grid-cols-2 gap-3 text-center">
+              <div>
+                <div className="text-lg font-bold text-blue-400">47</div>
+                <div className="text-xs text-slate-400">Messages</div>
+              </div>
+              <div>
+                <div className="text-lg font-bold text-green-400">12</div>
+                <div className="text-xs text-slate-400">Insights</div>
+              </div>
+              <div>
+                <div className="text-lg font-bold text-purple-400">3</div>
+                <div className="text-xs text-slate-400">Agents</div>
+              </div>
+              <div>
+                <div className="text-lg font-bold text-yellow-400">5</div>
+                <div className="text-xs text-slate-400">Sessions</div>
+              </div>
+            </div>
+          </div>
+          
+          {/* ZKP Credential Section */}
+          <div className="bg-gradient-to-r from-blue-600/20 to-cyan-600/20 border border-blue-400/30 rounded-lg p-3">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-3 h-3 rounded-full bg-blue-400"></div>
+              <h4 className="text-sm font-semibold text-white">Zero-Knowledge Proof (ZKP)</h4>
+            </div>
+            <p className="text-xs text-slate-300 mb-2">Privacy-preserving credential verification</p>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-slate-300">Contribution Proof</span>
+                <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-slate-300">Working Group Access</span>
+                <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-slate-300">Agent Interaction</span>
+                <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-slate-300">Trust Score</span>
+                <div className="w-2 h-2 bg-yellow-400 rounded-full"></div>
+              </div>
+            </div>
+          </div>
+
+          {/* First Person Project Integration */}
+          <div className="bg-gradient-to-r from-green-600/20 to-teal-600/20 border border-green-400/30 rounded-lg p-3">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-3 h-3 rounded-full bg-green-400"></div>
+              <h4 className="text-sm font-semibold text-white">First Person Project Control</h4>
+            </div>
+            <p className="text-xs text-slate-300 mb-2">Data sovereignty and credential control</p>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-slate-300">DID Verification</span>
+                <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-slate-300">Credential Ownership</span>
+                <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-slate-300">Privacy Control</span>
+                <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-slate-300">Revocation Rights</span>
+                <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+              </div>
+            </div>
+          </div>
+
+          {/* Privacy Pools Integration */}
+          <div className="bg-gradient-to-r from-orange-600/20 to-red-600/20 border border-orange-400/30 rounded-lg p-3">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-3 h-3 rounded-full bg-orange-400"></div>
+              <h4 className="text-sm font-semibold text-white">Privacy Pools Integration</h4>
+            </div>
+            <p className="text-xs text-slate-300 mb-2">ASP eligibility and research rewards</p>
+            <div className="text-xs text-slate-400">
+              • Research contribution verification<br/>
+              • Privacy-preserving credential generation<br/>
+              • Trust score calculation
+            </div>
+          </div>
+          
+          {/* Credential Composition Flow */}
+          <div className="bg-slate-700/30 rounded-lg p-3">
+            <h4 className="text-sm font-semibold text-white mb-2">Credential Composition Flow</h4>
+            <div className="space-y-1 text-xs text-slate-300">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+                <span>1. Generate ZKP of contributions</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                <span>2. Verify FPP credential ownership</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-orange-400 rounded-full"></div>
+                <span>3. Submit to Privacy Pools for ASP</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-purple-400 rounded-full"></div>
+                <span>4. Issue verifiable intelligence credential</span>
+              </div>
+            </div>
+          </div>
+          
+          {/* Generate Credential Button */}
+          <button
+            onClick={() => {
+              // TODO: Implement actual credential generation with ZKP and FPP
+              console.log('Generating ZKP-based intelligence credential with FPP control via privacy pools');
+              setShowCredentialComposer(false);
+            }}
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white rounded-lg text-sm font-medium transition-all shadow-lg hover:shadow-xl"
+          >
+            <ShieldCheck className="w-4 h-4" />
+            Generate ZKP Intelligence Credential
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+  // My Contributions Panel - Floating overlay
+  const MyContributionsPanel = () => (
+    <div 
+      data-contributions-panel
+      className={`fixed top-20 right-4 z-50 transition-all duration-300 ${
+        showMyContributions ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 pointer-events-none'
+      }`}
+    >
+      <div className="bg-slate-800/95 backdrop-blur border border-yellow-400/30 rounded-xl p-4 shadow-2xl min-w-80 max-w-96">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+            <Award className="w-5 h-5" />
+            My Contributions
+          </h3>
+          <button
+            onClick={() => setShowMyContributions(false)}
+            className="p-1 bg-slate-700/50 hover:bg-slate-700 rounded-lg transition-colors"
+            title="Close contributions panel"
+          >
+            <ChevronDown className="w-4 h-4" />
+          </button>
+        </div>
+        
+        <div className="space-y-4">
+          {/* Contribution Stats */}
+          <div className="bg-slate-700/30 rounded-lg p-3">
+            <div className="grid grid-cols-2 gap-3 text-center">
+              <div>
+                <div className="text-lg font-bold text-white">47</div>
+                <div className="text-xs text-slate-400">Messages</div>
+              </div>
+              <div>
+                <div className="text-lg font-bold text-green-400">12</div>
+                <div className="text-xs text-slate-400">Insights</div>
+              </div>
+              <div>
+                <div className="text-lg font-bold text-blue-400">5</div>
+                <div className="text-xs text-slate-400">Sessions</div>
+              </div>
+              <div>
+                <div className="text-lg font-bold text-purple-400">3</div>
+                <div className="text-xs text-slate-400">Agents</div>
+              </div>
+            </div>
+          </div>
+          
+          {/* Recent Activity */}
+          <div className="space-y-2">
+            <div className="text-xs font-medium text-slate-400 mb-2">Recent Activity</div>
+            <div className="space-y-2 max-h-40 overflow-y-auto">
+              <div className="flex items-center gap-2 p-2 bg-slate-700/20 rounded-lg">
+                <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                <div className="flex-1">
+                  <div className="text-xs text-slate-300">Shared insight in BGIN Agent Hack</div>
+                  <div className="text-xs text-slate-500">2 hours ago</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 p-2 bg-slate-700/20 rounded-lg">
+                <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+                <div className="flex-1">
+                  <div className="text-xs text-slate-300">Asked Archive Agent about governance</div>
+                  <div className="text-xs text-slate-500">4 hours ago</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 p-2 bg-slate-700/20 rounded-lg">
+                <div className="w-2 h-2 bg-purple-400 rounded-full"></div>
+                <div className="flex-1">
+                  <div className="text-xs text-slate-300">Collaborated in IKP session</div>
+                  <div className="text-xs text-slate-500">1 day ago</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 p-2 bg-slate-700/20 rounded-lg">
+                <div className="w-2 h-2 bg-yellow-400 rounded-full"></div>
+                <div className="flex-1">
+                  <div className="text-xs text-slate-300">Posted in Cyber Security working group</div>
+                  <div className="text-xs text-slate-500">2 days ago</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          {/* Compose Credential Button */}
+          <div className="pt-3 border-t border-slate-600/30">
+            <button
+              onClick={() => {
+                setShowCredentialComposer(true);
+                setShowMyContributions(false);
+              }}
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white rounded-lg text-sm font-medium transition-all shadow-lg hover:shadow-xl"
+            >
+              <ShieldCheck className="w-4 h-4" />
+              Compose Credential
+            </button>
+            <div className="text-xs text-slate-400 text-center mt-2">
+              Generate intelligence credentials based on your contributions
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -625,111 +1085,347 @@ const BGINMultiAgentInterface = () => {
 
   return (
     <div className="flex h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 text-white">
-      {/* Sidebar */}
-      <div className={`${showSidebar ? 'w-80' : 'w-0'} transition-all duration-300 bg-slate-800/50 backdrop-blur border-r border-blue-400/30 overflow-hidden`}>
+      {/* Floating Agent Selector */}
         <AgentSelector />
         
-        {/* Agent Capabilities Summary */}
-        {!multiAgentMode && showLexicon && (
-          <div className="p-4 border-t border-blue-400/20">
+      {/* Floating My Contributions Panel */}
+      <MyContributionsPanel />
+      
+      {/* Floating Credential Composer Panel */}
+      <CredentialComposerPanel />
+      
+      {/* Sidebar - Block 13 Collaborative Sessions */}
+      <div className={`${showSidebar ? 'w-80' : 'w-0'} transition-all duration-300 bg-slate-800/50 backdrop-blur border-r border-blue-400/30 overflow-hidden flex flex-col`}>
+        <div className="p-4 border-b border-blue-400/20">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+              <Network className="w-5 h-5" />
+              Block 13 Sessions
+            </h2>
+            <button
+              onClick={() => setShowSidebar(false)}
+              className="p-2 bg-slate-700/50 hover:bg-slate-700 rounded-lg transition-colors"
+              title="Hide sidebar"
+            >
+              <Menu className="w-4 h-4" />
+            </button>
+          </div>
+          
+          <div className="text-xs text-slate-400 mb-4">
+            Collaborative chat rooms with shared TEE
+          </div>
+        </div>
+        
+        {/* Block 13 Sessions - Collaborative Chat Rooms */}
+        <div className="flex-1 overflow-y-auto p-4 min-h-0">
+          <div className="space-y-3">
+            {Object.values(sessions).map(session => {
+              const isSelected = selectedSession === session.id;
+              const sessionMessages = messages[`${session.id}-multi`] || [];
+              const participantCount = Math.floor(Math.random() * 15) + 5; // Simulated participant count
+              
+              return (
+                <button
+                  key={session.id}
+                  onClick={() => {
+                    setSelectedSession(session.id);
+                    setMultiAgentMode(true); // Always collaborative in sessions
+                  }}
+                  className={`w-full text-left p-4 rounded-xl transition-all ${
+                    isSelected
+                      ? 'bg-gradient-to-r from-blue-600/30 to-purple-600/30 border border-blue-400/50 shadow-lg'
+                      : 'bg-slate-700/30 hover:bg-slate-700/50 border border-slate-600/30'
+                  }`}
+                >
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <div 
+                        className="w-3 h-3 rounded-full"
+                        style={{ backgroundColor: session.color }}
+                      />
+                      <h3 className="font-semibold text-white text-sm">{session.name}</h3>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <div className={`w-2 h-2 rounded-full ${
+                        session.status === 'live' ? 'bg-red-400 animate-pulse' :
+                        session.status === 'active' ? 'bg-green-400' :
+                        'bg-yellow-400'
+                      }`} />
+                      <span className="text-xs text-slate-400">{participantCount}</span>
+                    </div>
+                  </div>
+                  
+                  <p className="text-xs text-slate-300 mb-3 line-clamp-2">{session.description}</p>
+                  
+                  <div className="flex items-center justify-between text-xs text-slate-400">
+                    <span>{session.workingGroup}</span>
+                    <div className="flex items-center gap-2">
+                      <span>{sessionMessages.length} msgs</span>
+                      <div className="flex items-center gap-1">
+                        <Users className="w-3 h-3" />
+                        <span>{participantCount} active</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Collaborative Agents Indicator */}
+                  <div className="mt-3 flex items-center gap-1">
+                    <div className="flex -space-x-1">
+                      {Object.values(agentTypes).map((agent, index) => {
+                        const Icon = agent.icon;
+                        return (
+                          <div key={agent.id} className="relative">
+                            <div className={`w-6 h-6 rounded-full bg-gradient-to-r ${agent.color} flex items-center justify-center border-2 border-slate-800`}>
+                              <Icon className="w-3 h-3 text-white" />
+                            </div>
+                            {index < Object.values(agentTypes).length - 1 && (
+                              <div className="absolute -right-1 top-1/2 w-2 h-0.5 bg-slate-600 transform -translate-y-1/2" />
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <span className="text-xs text-slate-400 ml-2">All agents active</span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+        
+
+        {/* Individual Agent Access */}
+        <div className="p-4 border-t border-blue-400/20 flex-shrink-0">
+          <h3 className="text-sm font-semibold text-slate-300 mb-3">Direct Agent Access</h3>
+          <div className="space-y-2">
+            {Object.values(agentTypes).map(agent => {
+              const Icon = agent.icon;
+              const isSelected = selectedAgent === agent.id && !multiAgentMode;
+              
+              return (
+                <button
+                  key={agent.id}
+                  onClick={() => {
+                    setSelectedAgent(agent.id);
+                    setMultiAgentMode(false);
+                    setSelectedSession('direct-agent'); // Special session for direct agent access
+                  }}
+                  className={`w-full flex items-center gap-3 p-3 rounded-lg text-left transition-all ${
+                    isSelected
+                      ? 'bg-gradient-to-r ' + agent.color + ' text-white shadow-lg'
+                      : 'bg-slate-700/30 hover:bg-slate-700/50 text-slate-300'
+                  }`}
+                >
+                  <Icon className="w-4 h-4" />
+                  <div className="flex-1">
+                    <div className="font-medium text-sm">{agent.name}</div>
+                    <div className="text-xs opacity-70">{agent.description}</div>
+                  </div>
+                  <div className={`w-2 h-2 rounded-full ${
+                    agent.status === 'active' ? 'bg-green-400 animate-pulse' : 'bg-gray-400'
+                  }`} />
+                </button>
+              );
+            })}
+          </div>
+        </div>
+        
+        {/* Integration Roadmap - Collapsible */}
+        <div className="p-4 border-t border-blue-400/20 flex-shrink-0">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-semibold text-blue-100">
-                {currentAgent.name} Status
+            <h3 className="text-sm font-semibold text-slate-300 flex items-center gap-2">
+              <Network className="w-4 h-4" />
+              Integration Status
               </h3>
               <button
-                onClick={() => setShowLexicon(false)}
-                className="text-slate-400 hover:text-slate-200"
-                title="Collapse capabilities"
-              >
-                <ChevronDown className="w-4 h-4" />
+              onClick={() => setShowIntegrationRoadmap(!showIntegrationRoadmap)}
+              className="p-1 bg-slate-700/50 hover:bg-slate-700 rounded-lg transition-colors"
+              title="Toggle integration roadmap"
+            >
+              {showIntegrationRoadmap ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
               </button>
             </div>
             
+          {showIntegrationRoadmap && (
             <div className="space-y-2">
-              {currentAgent.capabilities.map((capability: string, index: number) => (
-                <div key={index} className="flex items-center gap-2 p-2 bg-slate-700/20 rounded text-sm">
-                  <CheckCircle className="w-4 h-4 text-green-400" />
-                  <span className="text-slate-300">{capability}</span>
+              {/* Integration Status Indicators */}
+              <div className="grid grid-cols-2 gap-2">
+                <div className="flex items-center gap-2 p-2 bg-slate-700/30 rounded-lg">
+                  <div className={`w-2 h-2 rounded-full ${integrationStatus.kwaai.connected ? 'bg-green-400' : 'bg-red-400'}`} />
+                  <span className="text-xs text-slate-300">Kwaai</span>
                 </div>
-              ))}
+                <div className="flex items-center gap-2 p-2 bg-slate-700/30 rounded-lg">
+                  <div className={`w-2 h-2 rounded-full ${integrationStatus.fpp.connected ? 'bg-green-400' : 'bg-red-400'}`} />
+                  <span className="text-xs text-slate-300">FPP</span>
             </div>
-            
-            {currentSessionAgent && (
-              <div className="mt-3 p-3 bg-gradient-to-r from-blue-600/20 to-purple-600/20 border border-blue-400/30 rounded-lg">
-                <div className="text-xs text-blue-200 mb-1">Current Activity</div>
-                <div className="text-xs text-slate-300 mb-2">{currentAgent.recentActivity}</div>
-                <div className="text-xs text-slate-400">
-                  {selectedAgent === 'archive' && `${currentSessionAgent.documents} documents • ${currentSessionAgent.correlations} correlations`}
-                  {selectedAgent === 'codex' && `${currentSessionAgent.frameworks} frameworks • ${currentSessionAgent.assessments} assessments`}
-                  {selectedAgent === 'discourse' && `${currentSessionAgent.activeThreads} threads • ${currentSessionAgent.engagementRate}% engagement`}
+                <div className="flex items-center gap-2 p-2 bg-slate-700/30 rounded-lg">
+                  <div className={`w-2 h-2 rounded-full ${integrationStatus.toip.connected ? 'bg-green-400' : 'bg-red-400'}`} />
+                  <span className="text-xs text-slate-300">ToIP</span>
                 </div>
+                <div className="flex items-center gap-2 p-2 bg-slate-700/30 rounded-lg">
+                  <div className={`w-2 h-2 rounded-full ${integrationStatus.phalaCloud.connected ? 'bg-green-400' : 'bg-red-400'}`} />
+                  <span className="text-xs text-slate-300">Phala</span>
               </div>
-            )}
+              </div>
           </div>
         )}
+        </div>
+        
+        {/* TEE Status Footer */}
+        <div className="p-4 border-t border-blue-400/20 flex-shrink-0">
+          <div className="bg-gradient-to-r from-cyan-600/20 to-blue-600/20 border border-cyan-400/30 rounded-lg p-3">
+            <div className="flex items-center gap-2 mb-2">
+              <Cpu className="w-4 h-4 text-cyan-400" />
+              <span className="text-sm font-semibold text-white">Shared TEE Active</span>
+            </div>
+            <div className="text-xs text-slate-300">
+              All agents collaborate securely through Phala Cloud's trusted execution environment
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Main Interface */}
       <div className="flex-1 flex flex-col">
         <PrivacyStatusBar />
         <AgentStatusBar />
-        <IntegrationRoadmapPanel />
         
-        {/* Agent Header */}
-        <div className="bg-slate-800/50 backdrop-blur border-b border-blue-400/30 p-4">
+        
+        {/* Main Content Area */}
+        <>
+            {/* Collaborative Session Header */}
+            <div className="bg-slate-800/50 backdrop-blur border-b border-blue-400/30 p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               {!showSidebar && (
                 <button
                   onClick={() => setShowSidebar(true)}
                   className="p-2 bg-slate-700/50 hover:bg-slate-700 rounded-lg transition-colors"
-                  title="Show sidebar"
+                  title="Show sessions"
                 >
                   <Menu className="w-4 h-4" />
                 </button>
               )}
-              <div className={`p-3 bg-gradient-to-r ${currentAgent.color} rounded-xl shadow-lg`}>
-                <currentAgent.icon className="w-6 h-6 text-white" />
+              
+              {/* Session/Agent Info - Dynamic Mode */}
+              <div className="flex items-center gap-4">
+                <div className={`p-3 rounded-xl shadow-lg ${
+                  multiAgentMode && currentSession?.id !== 'direct-agent'
+                    ? `bg-gradient-to-r ${currentSession?.color || 'from-slate-600 to-slate-700'}`
+                    : `bg-gradient-to-r ${currentAgent.color}`
+                }`}>
+                  <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center">
+                    {multiAgentMode && currentSession?.id !== 'direct-agent' ? (
+                      <Network className="w-4 h-4 text-white" />
+                    ) : (
+                      <currentAgent.icon className="w-4 h-4 text-white" />
+                    )}
               </div>
-              <div>
+                </div>
+                
+                <div className="text-left">
+                  <div className="flex items-center gap-2">
                 <h1 className="text-xl font-bold text-white">
-                  {multiAgentMode ? 'Multi-Agent Collaboration Hub' : currentAgent.name}
+                      {multiAgentMode && currentSession?.id !== 'direct-agent' 
+                        ? currentSession?.name || 'Select a Session'
+                        : currentAgent.name
+                      }
                 </h1>
+                    <div className={`px-2 py-1 text-xs rounded-full ${
+                      multiAgentMode && currentSession?.id !== 'direct-agent'
+                        ? 'bg-cyan-500/20 text-cyan-300'
+                        : 'bg-purple-500/20 text-purple-300'
+                    }`}>
+                      {multiAgentMode && currentSession?.id !== 'direct-agent' ? 'Collaborative' : 'Direct Agent'}
+                    </div>
+                  </div>
                 <p className="text-slate-300 text-sm">
-                  {multiAgentMode ? 'Archive + Codex + Discourse Integration' : currentAgent.description}
+                    {multiAgentMode && currentSession?.id !== 'direct-agent'
+                      ? currentSession?.description || 'Choose a Block 13 session to start collaborating'
+                      : currentAgent.description
+                    }
                 </p>
                 <div className="flex items-center gap-4 mt-1">
+                    {multiAgentMode && currentSession?.id !== 'direct-agent' ? (
+                      <>
                   <p className="text-slate-400 text-xs">
-                    Session: {currentSession.name} • {currentSession.participants} participants
-                  </p>
-                  {isTyping && (
-                    <div className="flex items-center gap-1 text-xs text-blue-300">
-                      <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
-                      <span>Agent responding...</span>
+                          Working Group: {currentSession?.workingGroup || 'N/A'} • {Math.floor(Math.random() * 15) + 5} participants
+                        </p>
+                        <div className="flex items-center gap-1 text-xs text-cyan-300">
+                          <Cpu className="w-3 h-3" />
+                          <span>Shared TEE Active</span>
                     </div>
+                      </>
+                    ) : (
+                      <>
+                        <p className="text-slate-400 text-xs">
+                          Direct conversation • {currentAgent.performance.accuracy}% accuracy
+                        </p>
+                        <div className="flex items-center gap-1 text-xs text-purple-300">
+                          <Lock className="w-3 h-3" />
+                          <span>Private TEE</span>
+                    </div>
+                      </>
                   )}
+                  </div>
                 </div>
               </div>
             </div>
             
+            <div className="flex items-center gap-3">
+              {/* Dynamic Status Based on Mode */}
+              {multiAgentMode && currentSession?.id !== 'direct-agent' ? (
+                /* Collaborative Mode Status */
             <div className="flex items-center gap-2">
-              {multiAgentMode && (
-                <div className="flex items-center gap-1">
+                  <div className="flex -space-x-1">
                   {Object.values(agentTypes).map((agent, index) => {
                     const Icon = agent.icon;
                     return (
                       <div key={agent.id} className="relative">
-                        <div className={`p-2 bg-gradient-to-r ${agent.color} rounded-lg shadow-lg`}>
+                          <div className={`w-8 h-8 rounded-full bg-gradient-to-r ${agent.color} flex items-center justify-center border-2 border-slate-800 shadow-lg`}>
                           <Icon className="w-4 h-4 text-white" />
                         </div>
                         {index < Object.values(agentTypes).length - 1 && (
-                          <div className="absolute -right-2 top-1/2 w-4 h-0.5 bg-gradient-to-r from-blue-400 to-purple-400 transform -translate-y-1/2" />
+                            <div className="absolute -right-1 top-1/2 w-2 h-0.5 bg-slate-600 transform -translate-y-1/2" />
                         )}
                       </div>
                     );
                   })}
+                  </div>
+                  <div className="text-left">
+                    <div className="text-xs text-slate-300">All agents active</div>
+                    <div className="text-xs text-slate-400">Collaborating via TEE</div>
+                  </div>
+                </div>
+              ) : (
+                /* Individual Agent Mode Status */
+                <div className="flex items-center gap-2">
+                  <div className={`w-8 h-8 rounded-full bg-gradient-to-r ${currentAgent.color} flex items-center justify-center border-2 border-slate-800 shadow-lg`}>
+                    <currentAgent.icon className="w-4 h-4 text-white" />
+                  </div>
+                  <div className="text-left">
+                    <div className="text-xs text-slate-300">{currentAgent.name} active</div>
+                    <div className="text-xs text-slate-400">Direct conversation</div>
+                  </div>
                 </div>
               )}
+              
+              {isTyping && (
+                <div className="flex items-center gap-2 text-xs text-blue-300 bg-blue-500/20 px-3 py-2 rounded-lg">
+                  <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
+                  <span>{multiAgentMode && currentSession?.id !== 'direct-agent' ? 'Agents responding...' : 'Agent responding...'}</span>
+                </div>
+              )}
+              
+              <button
+                data-contributions-panel
+                onClick={() => setShowMyContributions(!showMyContributions)}
+                className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-yellow-600 to-orange-600 hover:from-yellow-500 hover:to-orange-500 text-white rounded-lg text-sm transition-all shadow-lg"
+                title="View my contributions"
+              >
+                <Award className="w-4 h-4" />
+                My Contributions
+              </button>
             </div>
           </div>
         </div>
@@ -758,7 +1454,13 @@ const BGINMultiAgentInterface = () => {
                       <currentAgent.icon className="w-6 h-6" />
                     )}
                     <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
-                      <Lock className="w-2 h-2 text-white" />
+                      {message.isMultiAgentHub ? (
+                        <Network className="w-2 h-2 text-white" />
+                      ) : message.isTrackSession ? (
+                        <Target className="w-2 h-2 text-white" />
+                      ) : (
+                        <Lock className="w-2 h-2 text-white" />
+                      )}
                     </div>
                   </div>
                   <span className="text-xs text-slate-400 text-center max-w-20 truncate">
@@ -801,6 +1503,24 @@ const BGINMultiAgentInterface = () => {
                               <span>{Math.round(message.confidence * 100)}%</span>
                             </div>
                           )}
+                          {message.isMultiAgentHub && (
+                            <div className="flex items-center gap-1 text-purple-300">
+                              <Network className="w-3 h-3" />
+                              <span>Multi Agent Hub</span>
+                            </div>
+                          )}
+                          {message.isTrackSession && (
+                            <div className="flex items-center gap-1 text-orange-300">
+                              <Target className="w-3 h-3" />
+                              <span>Track Session</span>
+                            </div>
+                          )}
+                          {message.projectContainer && (
+                            <div className="flex items-center gap-1 text-green-300">
+                              <Archive className="w-3 h-3" />
+                              <span>{message.projectContainer}</span>
+                            </div>
+                          )}
                           {message.sources && (
                             <div className="flex items-center gap-1 text-yellow-300">
                               <BookOpenCheck className="w-3 h-3" />
@@ -813,6 +1533,18 @@ const BGINMultiAgentInterface = () => {
                         <ShieldCheck className="w-3 h-3" />
                         <span>Privacy Protected</span>
                       </div>
+                      {message.phalaCloudUsed && (
+                        <div className="flex items-center gap-1 text-cyan-300">
+                          <Cpu className="w-3 h-3" />
+                          <span>Phala TEE</span>
+                        </div>
+                      )}
+                      {message.confidentialCompute && (
+                        <div className="flex items-center gap-1 text-blue-300">
+                          <Lock className="w-3 h-3" />
+                          <span>Confidential</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -827,7 +1559,10 @@ const BGINMultiAgentInterface = () => {
           <div className="flex items-end gap-4">
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-2">
-                <button className="flex items-center gap-2 px-3 py-1 bg-blue-500/20 text-blue-300 rounded-lg text-sm hover:bg-blue-500/30 transition-colors">
+                <button 
+                  onClick={() => setShowUploadModal(true)}
+                  className="flex items-center gap-2 px-3 py-1 bg-blue-500/20 text-blue-300 rounded-lg text-sm hover:bg-blue-500/30 transition-colors"
+                >
                   <Upload className="w-4 h-4" />
                   Upload Document
                 </button>
@@ -859,9 +1594,9 @@ const BGINMultiAgentInterface = () => {
                   onChange={(e) => setInputValue(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
                   placeholder={
-                    multiAgentMode 
+                    multiAgentMode && currentSession?.id !== 'direct-agent'
                       ? "Ask all agents to collaborate on your research question..."
-                      : `Ask the ${currentAgent.name} about ${currentSession.name.toLowerCase()}...`
+                      : `Ask the ${currentAgent.name} directly about your question...`
                   }
                   className="w-full p-4 bg-slate-700/50 border border-blue-400/30 rounded-xl text-white placeholder-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20 pr-20"
                 />
@@ -873,6 +1608,7 @@ const BGINMultiAgentInterface = () => {
                   <button
                     onClick={handleSendMessage}
                     className="p-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
+                    title="Send message"
                   >
                     <Send className="w-4 h-4" />
                   </button>
@@ -946,6 +1682,235 @@ const BGINMultiAgentInterface = () => {
             )}
           </div>
         </div>
+        
+        {/* Conference Sessions Panel */}
+        {showConferenceSessions && (
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+            <div className="bg-slate-800 rounded-xl shadow-2xl border border-blue-400/30 w-full max-w-6xl h-5/6 m-4 flex flex-col">
+              {/* Header */}
+              <div className="flex items-center justify-between p-6 border-b border-blue-400/30">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-gradient-to-r from-green-600 to-teal-600 rounded-lg">
+                    <Calendar className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold text-white">Block 13 Conference Sessions</h2>
+                    <p className="text-slate-300">Select a session to start a multi-agent discussion</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowConferenceSessions(false)}
+                  className="p-2 bg-slate-700 hover:bg-slate-600 rounded-lg transition-colors"
+                  title="Close conference sessions"
+                >
+                  <ChevronUp className="w-5 h-5" />
+                </button>
+              </div>
+              
+              {/* Filters */}
+              <div className="p-6 border-b border-blue-400/20">
+                <div className="flex flex-wrap gap-4">
+                  {/* Track Filter */}
+                  <div className="flex items-center gap-2">
+                    <Filter className="w-4 h-4 text-slate-400" />
+                    <select
+                      value={selectedTrack}
+                      onChange={(e) => setSelectedTrack(e.target.value)}
+                      className="bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm"
+                      aria-label="Filter by track"
+                    >
+                      <option value="all">All Tracks</option>
+                      {conferenceTracks.map(track => (
+                        <option key={track.id} value={track.id}>{track.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  
+                  {/* Day Filter */}
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-slate-400" />
+                    <select
+                      value={selectedDay}
+                      onChange={(e) => setSelectedDay(e.target.value)}
+                      className="bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm"
+                      aria-label="Filter by day"
+                    >
+                      <option value="all">All Days</option>
+                      <option value="Day 1">Day 1 - October 15</option>
+                      <option value="Day 2">Day 2 - October 16</option>
+                      <option value="Day 3">Day 3 - October 17</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Sessions List */}
+              <div className="flex-1 overflow-y-auto p-6">
+                <div className="grid gap-4">
+                  {getFilteredSessions().map(session => {
+                    const track = conferenceTracks.find(t => t.id === session.track);
+                    return (
+                      <div key={session.id} className="bg-slate-700/50 border border-slate-600 rounded-lg p-4 hover:bg-slate-700/70 transition-colors">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-2">
+                              <div 
+                                className="w-3 h-3 rounded-full"
+                                style={{ backgroundColor: track?.color || '#6B7280' }}
+                              />
+                              <h3 className="text-lg font-semibold text-white">{session.title}</h3>
+                              <span className="px-2 py-1 bg-slate-600 text-slate-300 text-xs rounded-full">
+                                {session.day}
+                              </span>
+                            </div>
+                            <p className="text-slate-300 text-sm mb-2">{session.description}</p>
+                            <div className="flex items-center gap-4 text-xs text-slate-400">
+                              <span>📍 {session.room}</span>
+                              <span>🕐 {session.time}</span>
+                              <span>👥 {session.agents?.length || 0} agents</span>
+                              {track && <span>🏷️ {track.name}</span>}
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => initConferenceSession(session.id)}
+                            className="ml-4 px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white rounded-lg text-sm transition-all shadow-lg"
+                          >
+                            Open Multi Agent Hub
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Upload Document Modal */}
+        {showUploadModal && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50" data-upload-modal>
+            <div className="bg-slate-800 border border-blue-400/30 rounded-xl p-6 w-full max-w-md mx-4">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-white">Upload Document</h3>
+                <button
+                  onClick={() => setShowUploadModal(false)}
+                  className="text-slate-400 hover:text-white transition-colors"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                {/* File Selection */}
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                    Select File
+                  </label>
+                  <input
+                    type="file"
+                    onChange={handleFileUpload}
+                    accept=".pdf,.txt,.md,.docx,.html"
+                    className="w-full p-2 bg-slate-700 border border-slate-600 rounded-lg text-white text-sm"
+                  />
+                  {uploadFile && (
+                    <p className="text-xs text-slate-400 mt-1">
+                      Selected: {uploadFile.name}
+                    </p>
+                  )}
+                </div>
+
+                {/* Working Group Selection */}
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                    Working Group
+                  </label>
+                  <select
+                    value={uploadWorkingGroup}
+                    onChange={(e) => setUploadWorkingGroup(e.target.value)}
+                    className="w-full p-2 bg-slate-700 border border-slate-600 rounded-lg text-white text-sm"
+                  >
+                    {workingGroups.map((group) => (
+                      <option key={group.id} value={group.id}>
+                        {group.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Title */}
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                    Title *
+                  </label>
+                  <input
+                    type="text"
+                    value={uploadTitle}
+                    onChange={(e) => setUploadTitle(e.target.value)}
+                    placeholder="Document title"
+                    className="w-full p-2 bg-slate-700 border border-slate-600 rounded-lg text-white text-sm"
+                  />
+                </div>
+
+                {/* Author */}
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                    Author *
+                  </label>
+                  <input
+                    type="text"
+                    value={uploadAuthor}
+                    onChange={(e) => setUploadAuthor(e.target.value)}
+                    placeholder="Your name"
+                    className="w-full p-2 bg-slate-700 border border-slate-600 rounded-lg text-white text-sm"
+                  />
+                </div>
+
+                {/* Tags */}
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                    Tags (comma-separated)
+                  </label>
+                  <input
+                    type="text"
+                    value={uploadTags}
+                    onChange={(e) => setUploadTags(e.target.value)}
+                    placeholder="block13, privacy, governance"
+                    className="w-full p-2 bg-slate-700 border border-slate-600 rounded-lg text-white text-sm"
+                  />
+                </div>
+
+                {/* Upload Button */}
+                <div className="flex gap-3 pt-4">
+                  <button
+                    onClick={() => setShowUploadModal(false)}
+                    className="flex-1 px-4 py-2 bg-slate-600 hover:bg-slate-500 text-white rounded-lg transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleUploadDocument}
+                    disabled={isUploading || !uploadFile || !uploadTitle || !uploadAuthor || !uploadWorkingGroup}
+                    className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-500 disabled:cursor-not-allowed text-white rounded-lg transition-colors flex items-center justify-center gap-2"
+                  >
+                    {isUploading ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        Uploading...
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="w-4 h-4" />
+                        Upload
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        </>
       </div>
     </div>
   );

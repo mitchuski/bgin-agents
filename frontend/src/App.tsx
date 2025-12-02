@@ -1,7 +1,7 @@
-import BGINMultiAgentInterface from './components/BGINMultiAgentInterface'
+import MainInterface from './components/MainInterface'
 
 function App() {
-  return <BGINMultiAgentInterface />
+  return <MainInterface />
 }
 
 export default App

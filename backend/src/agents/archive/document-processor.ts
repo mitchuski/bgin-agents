@@ -22,6 +22,8 @@ export interface DocumentMetadata {
   originalUrl?: string;
   tags?: string[];
   language?: string;
+  category?: string;
+  version?: string;
 }
 
 export interface DocumentChunk {
@@ -409,7 +411,7 @@ export class DocumentProcessor {
         SELECT * FROM archive_document_chunks WHERE document_id = $1 ORDER BY chunk_index
       `, [documentId]);
 
-      const chunks: DocumentChunk[] = chunksResult.rows.map(row => ({
+      const chunks: DocumentChunk[] = chunksResult.rows.map((row: any) => ({
         id: row.id,
         documentId: row.document_id,
         chunkIndex: row.chunk_index,
@@ -445,7 +447,7 @@ export class DocumentProcessor {
         SELECT id FROM archive_document_chunks WHERE document_id = $1
       `, [documentId]);
 
-      const chunkIds = chunksResult.rows.map(row => row.id);
+      const chunkIds = chunksResult.rows.map((row: any) => row.id);
       if (chunkIds.length > 0) {
         await qdrantClient.deletePoints(this.COLLECTION_NAME, chunkIds);
       }

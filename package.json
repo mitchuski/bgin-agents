@@ -2,13 +2,20 @@
   "name": "bgin-ai-mvp",
   "version": "1.0.0",
   "description": "Multi-Agent Privacy-Preserving Research System for BGIN Governance",
-  "keywords": ["blockchain", "governance", "privacy", "ai-agents", "decentralized-identity", "trust-networks"],
+  "keywords": [
+    "blockchain",
+    "governance",
+    "privacy",
+    "ai-agents",
+    "decentralized-identity",
+    "trust-networks"
+  ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/your-org/bgin-ai-mvp.git"
+    "url": "https://github.com/mitchuski/bgin-agents.git"
   },
   "license": "MIT",
-  "author": "BGIN Community",
+  "author": "Mitchuski <https://github.com/mitchuski>",
   "workspaces": [
     "frontend",
     "backend"
@@ -40,11 +47,22 @@
     }
   },
   "lint-staged": {
-    "*.{js,ts,tsx}": ["prettier --write", "git add"],
-    "*.{json,md}": ["prettier --write", "git add"]
+    "*.{js,ts,tsx}": [
+      "prettier --write",
+      "git add"
+    ],
+    "*.{json,md}": [
+      "prettier --write",
+      "git add"
+    ]
   },
   "engines": {
     "node": ">=18.0.0",
     "npm": ">=9.0.0"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.65.0",
+    "cors": "^2.8.5",
+    "express": "^5.1.0"
   }
 }

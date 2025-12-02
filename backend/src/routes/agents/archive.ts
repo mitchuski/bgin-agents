@@ -80,7 +80,7 @@ router.post('/process', asyncHandler(async (req, res) => {
       metadata || {}
     )
     
-    res.json({
+    return res.json({
       success: true,
       document: {
         id: processedDocument.id,
@@ -96,7 +96,7 @@ router.post('/process', asyncHandler(async (req, res) => {
     })
   } catch (error) {
     logger.error('Document processing failed:', error)
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       error: 'Document processing failed',
       message: error instanceof Error ? error.message : 'Unknown error'
@@ -135,14 +135,14 @@ router.post('/query', asyncHandler(async (req, res) => {
 
     const response = await enhancedRAGEngine.processQuery(ragQuery)
     
-    res.json({
+    return res.json({
       success: true,
       response,
       timestamp: new Date().toISOString()
     })
   } catch (error) {
     logger.error('RAG query failed:', error)
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       error: 'Query processing failed',
       message: error instanceof Error ? error.message : 'Unknown error'
@@ -192,7 +192,7 @@ router.get('/search', asyncHandler(async (req, res) => {
     const rankedResults = await retrievalSystem.rankResults(results)
     const filteredResults = await retrievalSystem.applyPrivacyFilters(rankedResults, userContext)
     
-    res.json({
+    return res.json({
       success: true,
       query: query as string,
       results: filteredResults.map(result => ({
@@ -208,7 +208,7 @@ router.get('/search', asyncHandler(async (req, res) => {
     })
   } catch (error) {
     logger.error('Search failed:', error)
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       error: 'Search failed',
       message: error instanceof Error ? error.message : 'Unknown error'
@@ -229,14 +229,14 @@ router.post('/sync-discourse', asyncHandler(async (req, res) => {
 
     await enhancedRAGEngine.syncWithDiscourse(sessionId)
     
-    res.json({
+    return res.json({
       success: true,
       message: 'Discourse synchronization completed',
       timestamp: new Date().toISOString()
     })
   } catch (error) {
     logger.error('Discourse sync failed:', error)
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       error: 'Discourse synchronization failed',
       message: error instanceof Error ? error.message : 'Unknown error'
@@ -257,14 +257,14 @@ router.post('/generate-correlations', asyncHandler(async (req, res) => {
 
     await enhancedRAGEngine.generateKnowledgeCorrelations(sessionId)
     
-    res.json({
+    return res.json({
       success: true,
       message: 'Knowledge correlations generated',
       timestamp: new Date().toISOString()
     })
   } catch (error) {
     logger.error('Correlation generation failed:', error)
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       error: 'Correlation generation failed',
       message: error instanceof Error ? error.message : 'Unknown error'
@@ -276,7 +276,7 @@ router.get('/knowledge-base', asyncHandler(async (req, res) => {
   try {
     const stats = await retrievalSystem.getCollectionStats()
     
-    res.json({
+    return res.json({
       success: true,
       knowledgeBase: {
         totalDocuments: stats.points_count || 0,
@@ -297,7 +297,7 @@ router.get('/knowledge-base', asyncHandler(async (req, res) => {
     })
   } catch (error) {
     logger.error('Knowledge base stats failed:', error)
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       error: 'Failed to get knowledge base statistics'
     })
@@ -308,7 +308,7 @@ router.get('/health', asyncHandler(async (req, res) => {
   try {
     const health = await enhancedRAGEngine.healthCheck()
     
-    res.json({
+    return res.json({
       status: health ? 'healthy' : 'unhealthy',
       timestamp: new Date().toISOString(),
       components: {
@@ -318,7 +318,7 @@ router.get('/health', asyncHandler(async (req, res) => {
     })
   } catch (error) {
     logger.error('Health check failed:', error)
-    res.status(500).json({
+    return res.status(500).json({
       status: 'unhealthy',
       error: 'Health check failed'
     })

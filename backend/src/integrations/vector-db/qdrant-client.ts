@@ -9,7 +9,7 @@ import { config } from '../../utils/config';
 export interface CollectionConfig {
   vectors: {
     size: number;
-    distance: 'Cosine' | 'Euclidean' | 'Dot';
+    distance: 'Cosine' | 'Euclid' | 'Dot';
   };
   optimizers_config?: {
     default_segment_number?: number;
@@ -152,7 +152,7 @@ export class QdrantClient {
       return result.map(hit => ({
         id: hit.id,
         score: hit.score,
-        payload: hit.payload
+        payload: hit.payload || undefined
       }));
     } catch (error) {
       logger.error(`Failed to search in collection ${collection}:`, error);
@@ -230,9 +230,9 @@ export class QdrantClient {
         points: result.points.map(point => ({
           id: point.id,
           vector: point.vector as number[],
-          payload: point.payload
+          payload: point.payload || undefined
         })),
-        next_page_offset: result.next_page_offset
+        next_page_offset: typeof result.next_page_offset === 'object' ? undefined : result.next_page_offset || undefined
       };
     } catch (error) {
       logger.error(`Failed to scroll points in collection ${collection}:`, error);

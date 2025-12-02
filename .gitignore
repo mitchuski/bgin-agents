@@ -130,3 +130,43 @@ dist-ssr
 .env.development.local
 .env.test.local
 .env.production.local
+
+# Chat storage (contains sensitive conversation data)
+chat-storage/
+*.json
+
+# API keys and secrets
+*.key
+*.pem
+*.p12
+*.pfx
+
+# Logs and temporary files
+*.log
+*.tmp
+*.temp
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Backup files
+*.bak
+*.backup
+*.old
+
+# Test files
+test-*.js
+test-*.ts

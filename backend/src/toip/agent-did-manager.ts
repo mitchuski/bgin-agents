@@ -319,7 +319,7 @@ export class AgentDIDManager {
       'discourse': ['facilitate-discussions', 'build-consensus', 'manage-community', 'establish-trust']
     };
     
-    return permissions[agentType] || [];
+    return permissions[agentType as keyof typeof permissions] || [];
   }
 
   /**

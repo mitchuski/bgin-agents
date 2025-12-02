@@ -33,7 +33,7 @@ docker --version
 ### Step 3: Set Up Project
 ```powershell
 # Navigate to your project directory
-cd C:\Users\mitch\BGINAI\bgin-ai-mvp
+cd bgin-ai-mvp
 
 # Install root dependencies
 npm install
@@ -62,8 +62,8 @@ npm run dev
 ```
 
 ### Step 5: Access Your Application
-- **Frontend**: http://localhost:3001
-- **Backend API**: http://localhost:3000
+- **Frontend**: http://localhost:4000
+- **Backend API**: http://localhost:4000
 - **Database**: localhost:5432
 - **Redis**: localhost:6379
 

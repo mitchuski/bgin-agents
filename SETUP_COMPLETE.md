@@ -38,7 +38,7 @@ Your Kyra AI Agent project is now fully set up with:
 #### 2. Start Development
 ```bash
 # Navigate to project
-cd C:\Users\mitch\BGINAI\bgin-ai-mvp
+cd bgin-ai-mvp
 
 # Install dependencies
 npm install
@@ -51,9 +51,9 @@ npm run dev
 ```
 
 #### 3. Access Your Application
-- **Frontend**: http://localhost:3001
-- **Backend API**: http://localhost:3000
-- **Health Check**: http://localhost:3000/health
+- **Frontend**: http://localhost:4000
+- **Backend API**: http://localhost:4000
+- **Health Check**: http://localhost:4000/health
 
 ### 📚 Available Documentation
 

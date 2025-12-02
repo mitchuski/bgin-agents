@@ -32,7 +32,6 @@ export interface DiscourseTopic {
   last_poster_username: string;
   last_poster_id: number;
   last_post_id: number;
-  last_posted_at: string;
   views: number;
   like_count: number;
   has_summary: boolean;
@@ -181,13 +180,6 @@ export interface DiscourseUser {
   featured_user_badge_ids: number[];
   staged: boolean;
   can_edit: boolean;
-  can_edit_username: boolean;
-  can_edit_email: boolean;
-  can_edit_name: boolean;
-  can_edit_title: boolean;
-  can_edit_primary_group: boolean;
-  can_edit_trust_level: boolean;
-  can_edit_staged: boolean;
   can_edit_username: boolean;
   can_edit_email: boolean;
   can_edit_name: boolean;

@@ -89,7 +89,7 @@ Complete PostgreSQL schema with:
 ### **2. Quick Start (Recommended)**
 ```bash
 # Navigate to project
-cd C:\Users\mitch\BGINAI\bgin-ai-mvp
+cd bgin-ai-mvp
 
 # Make scripts executable (Linux/Mac)
 chmod +x scripts/*.sh
@@ -121,7 +121,7 @@ npm run dev
 ```
 
 ### **4. Access Your System**
-- **Frontend**: http://localhost:3000
+- **Frontend**: http://localhost:4000
 - **Backend API**: http://localhost:4000
 - **Health Check**: http://localhost:4000/health
 - **Database**: localhost:5432 (PostgreSQL)
@@ -153,7 +153,7 @@ curl http://localhost:4000/health
 ```
 
 ### **2. Test Multi-Agent System**
-1. Open http://localhost:3000
+1. Open http://localhost:4000
 2. Try different agents:
    - **Archive Agent**: "What are current blockchain governance challenges?"
    - **Codex Agent**: "Analyze regulatory compliance for DeFi"

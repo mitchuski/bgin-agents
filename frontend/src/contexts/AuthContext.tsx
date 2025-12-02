@@ -41,7 +41,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // Check for existing session
     const token = localStorage.getItem('auth_token');
     if (token) {
-      // TODO: Implement proper token validation
+      // Token validation will be implemented when backend auth is ready
       // For now, user remains null until proper authentication
     }
     setIsLoading(false);
@@ -50,7 +50,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const login = async (_email: string, _password: string) => {
     setIsLoading(true);
     try {
-      // TODO: Implement proper authentication with backend
+      // Authentication will be implemented when backend auth is ready
       // This should call the actual login API endpoint
       throw new Error('Authentication not yet implemented');
     } catch (error) {

@@ -30,13 +30,13 @@ router.post('/agents/did', async (req: Request, res: Response) => {
 
     const agentDID = await agentDIDManager.createAgentDID(agentType, capabilities);
     
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
       data: agentDID
     });
   } catch (error) {
     console.error('Error creating agent DID:', error);
-    res.status(500).json({
+    return res.status(500).json({
       error: 'Failed to create agent DID'
     });
   }
@@ -63,13 +63,13 @@ router.post('/agents/credentials', async (req: Request, res: Response) => {
       trustLevel || 0.8
     );
     
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
       data: credential
     });
   } catch (error) {
     console.error('Error issuing credential:', error);
-    res.status(500).json({
+    return res.status(500).json({
       error: 'Failed to issue credential'
     });
   }
@@ -96,13 +96,13 @@ router.post('/agents/trust', async (req: Request, res: Response) => {
       evidence || []
     );
     
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
       data: relationship
     });
   } catch (error) {
     console.error('Error establishing trust relationship:', error);
-    res.status(500).json({
+    return res.status(500).json({
       error: 'Failed to establish trust relationship'
     });
   }
@@ -124,13 +124,13 @@ router.put('/agents/trust/:fromAgent/:toAgent', async (req: Request, res: Respon
 
     await agentDIDManager.updateTrustScore(fromAgent, toAgent, evidence);
     
-    res.json({
+    return res.json({
       success: true,
       message: 'Trust score updated successfully'
     });
   } catch (error) {
     console.error('Error updating trust score:', error);
-    res.status(500).json({
+    return res.status(500).json({
       error: 'Failed to update trust score'
     });
   }
@@ -151,13 +151,13 @@ router.get('/agents/:agentDID/reputation', async (req: Request, res: Response) =
       });
     }
     
-    res.json({
+    return res.json({
       success: true,
       data: reputation
     });
   } catch (error) {
     console.error('Error getting agent reputation:', error);
-    res.status(500).json({
+    return res.status(500).json({
       error: 'Failed to get agent reputation'
     });
   }
@@ -172,13 +172,13 @@ router.get('/agents/:agentDID/trust-relationships', async (req: Request, res: Re
     
     const relationships = agentDIDManager.getTrustRelationships(agentDID);
     
-    res.json({
+    return res.json({
       success: true,
       data: relationships
     });
   } catch (error) {
     console.error('Error getting trust relationships:', error);
-    res.status(500).json({
+    return res.status(500).json({
       error: 'Failed to get trust relationships'
     });
   }
@@ -193,13 +193,13 @@ router.get('/agents/:agentDID/credentials', async (req: Request, res: Response) 
     
     const credentials = agentDIDManager.getAgentCredentials(agentDID);
     
-    res.json({
+    return res.json({
       success: true,
       data: credentials
     });
   } catch (error) {
     console.error('Error getting agent credentials:', error);
-    res.status(500).json({
+    return res.status(500).json({
       error: 'Failed to get agent credentials'
     });
   }
@@ -220,7 +220,7 @@ router.post('/credentials/verify', async (req: Request, res: Response) => {
 
     const isValid = await agentDIDManager.verifyCredential(credential);
     
-    res.json({
+    return res.json({
       success: true,
       data: {
         valid: isValid
@@ -228,7 +228,7 @@ router.post('/credentials/verify', async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Error verifying credential:', error);
-    res.status(500).json({
+    return res.status(500).json({
       error: 'Failed to verify credential'
     });
   }
@@ -241,13 +241,13 @@ router.get('/agents', async (req: Request, res: Response) => {
   try {
     const agents = agentDIDManager.getAllAgents();
     
-    res.json({
+    return res.json({
       success: true,
       data: agents
     });
   } catch (error) {
     console.error('Error getting all agents:', error);
-    res.status(500).json({
+    return res.status(500).json({
       error: 'Failed to get agents'
     });
   }
@@ -272,7 +272,7 @@ router.get('/status', async (req: Request, res: Response) => {
       totalCredentials += credentials.length;
     }
     
-    res.json({
+    return res.json({
       success: true,
       data: {
         totalAgents,
@@ -285,7 +285,7 @@ router.get('/status', async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Error getting ToIP status:', error);
-    res.status(500).json({
+    return res.status(500).json({
       error: 'Failed to get ToIP status'
     });
   }

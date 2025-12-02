@@ -9,6 +9,16 @@ A privacy-preserving, multi-agent research platform for blockchain governance, i
 
 ## 🌟 Features
 
+### 🚀 **Current Implementation Status**
+- ✅ **Ollama Integration**: Local LLM processing with `llama3.2:3b-instruct-q4_0`
+- ✅ **Block 13 Conference Sessions**: 19 sessions across 5 working groups
+- ✅ **Multi Agent Hub**: Collaborative conference discussions
+- ✅ **Chat Persistence**: Session-specific chat history with project containers
+- ✅ **Discourse Integration**: Publish insights to public forums
+- ✅ **Track-Based Organization**: BGIN Agent Hack, IKP, Cyber Security, FASE, General
+- 🔄 **Phala Cloud Integration**: Ready for future confidential compute deployment
+- 🔄 **Advanced Privacy Features**: ToIP, FPP, Privacy Pools (architecture ready)
+
 ### 🤖 Three-Agent System
 - **Archive Agent** - Knowledge & RAG Systems (Blue theme)
   - Document analysis and knowledge synthesis
@@ -39,12 +49,12 @@ A privacy-preserving, multi-agent research platform for blockchain governance, i
   - **ToIP Framework**: Trust network establishment and management
   - **Privacy Pools**: Community-driven ASP qualification process
 
-### 🏛️ Block 13 Sessions
-- **Opening Keynote** (Completed)
-- **Technical Standards** (Active)
-- **Regulatory Landscape** (Active)
-- **Privacy & Digital Rights** (Upcoming)
-- **Cross-Chain Governance** (Planning)
+### 🏛️ Block 13 Conference Integration
+- **19 Conference Sessions** across 5 working groups
+- **Multi Agent Hub** for collaborative conference discussions
+- **Track-Based Organization** (BGIN Agent Hack, IKP, Cyber Security, FASE, General)
+- **Session-Specific Chat History** with project containers
+- **Discourse Integration** for publishing insights to public forums
 
 ### 🔒 Privacy & Trust Features
 - **DID-based Identity Management**: Decentralized identifier system
@@ -93,6 +103,7 @@ A privacy-preserving, multi-agent research platform for blockchain governance, i
 - Node.js 18+ 
 - npm 9+
 - Git
+- Ollama (for local LLM) - [Install Ollama](https://ollama.ai/)
 - PostgreSQL (for production)
 - Redis (for caching)
 
@@ -115,14 +126,25 @@ cp env.example .env
 # Edit .env with your configuration
 ```
 
-4. **Start development servers**
+4. **Install and start Ollama**
 ```bash
-npm run dev
+# Download and install Ollama from https://ollama.ai/
+ollama pull llama3.2:3b-instruct-q4_0
 ```
 
-5. **Access the interface**
-- Frontend: http://localhost:3000
-- Backend API: http://localhost:3001
+5. **Start development servers**
+```bash
+# Option 1: Full development environment
+npm run dev
+
+# Option 2: Simple server (recommended for Block 13)
+npm run dev:simple
+```
+
+6. **Access the interface**
+- Frontend: http://localhost:4000
+- Backend API: http://localhost:4000/api
+- Health Check: http://localhost:4000/health
 
 ## 🏗️ Architecture
 

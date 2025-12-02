@@ -22,11 +22,27 @@ const envSchema = Joi.object({
   ANONYMIZATION_SALT: Joi.string().min(16).required(),
   
   // AI Services
-  ANTHROPIC_API_KEY: Joi.string().required(),
-  OPENAI_API_KEY: Joi.string().required(),
+  ANTHROPIC_API_KEY: Joi.string().optional(),
+  OPENAI_API_KEY: Joi.string().optional(),
+  
+  // Kwaai Integration
+  KWAAI_API_KEY: Joi.string().required(),
+  KWAAI_ENDPOINT: Joi.string().default('https://api.kwaai.ai/v1'),
+  KWAAI_MODEL: Joi.string().default('kwaainet/llama-3.2-3b-instruct'),
+  
+  // Kwaai Distributed LLM
+  KWAAI_DISTRIBUTED_NODES: Joi.string().optional(),
+  KWAAI_DISTRIBUTED_ENABLED: Joi.boolean().default(false),
+  KWAAI_LOAD_BALANCING: Joi.string().valid('round_robin', 'least_connections', 'random').default('round_robin'),
+  KWAAI_REDUNDANCY: Joi.number().min(1).max(3).default(1),
+  KWAAI_PRIVACY_LEVEL: Joi.string().valid('minimum', 'medium', 'maximum').default('maximum'),
+  
+  // Kwaai Model Selection
+  KWAAI_FAST_MODEL: Joi.string().default('kwaainet/llama-3.2-3b-instruct'),
+  KWAAI_QUALITY_MODEL: Joi.string().default('kwaainet/llama-3.2-70b-instruct'),
+  KWAAI_EMBEDDING_MODEL: Joi.string().default('kwaainet/text-embedding-3-small'),
   
   // Integration
-  KWAAI_API_KEY: Joi.string().optional(),
   DISCOURSE_API_KEY: Joi.string().optional(),
   
   // Features
@@ -62,8 +78,28 @@ export const config = {
   anthropicApiKey: envVars.ANTHROPIC_API_KEY,
   openaiApiKey: envVars.OPENAI_API_KEY,
   
-  // Integration
+  // Kwaai Integration
   kwaaiApiKey: envVars.KWAAI_API_KEY,
+  kwaaiEndpoint: envVars.KWAAI_ENDPOINT,
+  kwaaiModel: envVars.KWAAI_MODEL,
+  
+  // Kwaai Distributed LLM
+  kwaaiDistributed: {
+    nodes: envVars.KWAAI_DISTRIBUTED_NODES ? envVars.KWAAI_DISTRIBUTED_NODES.split(',').map(node => node.trim()) : [],
+    enabled: envVars.KWAAI_DISTRIBUTED_ENABLED,
+    loadBalancing: envVars.KWAAI_LOAD_BALANCING,
+    redundancy: envVars.KWAAI_REDUNDANCY,
+    privacyLevel: envVars.KWAAI_PRIVACY_LEVEL
+  },
+  
+  // Kwaai Model Selection
+  kwaaiModels: {
+    fast: envVars.KWAAI_FAST_MODEL,
+    quality: envVars.KWAAI_QUALITY_MODEL,
+    embedding: envVars.KWAAI_EMBEDDING_MODEL
+  },
+  
+  // Integration
   discourseApiKey: envVars.DISCOURSE_API_KEY,
   
   // Features
